@@ -1,0 +1,17 @@
+{
+  "name": "enterprise-pos-erp",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "yarn workspace api dev",
+    "dev:admin": "yarn workspace admin-web dev",
+    "dev:pos": "yarn workspace pos-web dev",
+    "dev": "yarn run dev:api & yarn run dev:admin & yarn run dev:pos"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
