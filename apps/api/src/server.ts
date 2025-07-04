@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { tenantContext } from './middleware/tenant';
 import { connectDB } from './config/db';
+import authRoutes from './modules/auth/routes/auth.routes';
 
 dotenv.config();
 
@@ -20,6 +21,9 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'enterprise-pos-erp-api' });
 });
+
+
+app.use('/api/v1/auth', authRoutes);
 
 
 app.use(tenantContext);
