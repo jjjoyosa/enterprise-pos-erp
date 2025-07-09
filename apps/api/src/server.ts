@@ -6,15 +6,14 @@ import { connectDB } from './config/db';
 import authRoutes from './modules/auth/routes/auth.routes';
 import productRoutes from './modules/products/routes/product.routes';
 import inventoryRoutes from './modules/inventory/routes/inventory.routes';
+import saleRoutes from './modules/sales/routes/sale.routes';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
 connectDB();
-
 
 app.use(cors());
 app.use(express.json());
@@ -37,6 +36,7 @@ app.get('/api/v1/tenant-test', (req, res) => {
 
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
+app.use('/api/v1/sales', saleRoutes);
 
 app.listen(PORT, () => {
   console.log(`[API] Server running on port ${PORT}`);
