@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ProductTable } from './features/inventory/components/ProductTable';
-import { LayoutGrid } from 'lucide-react';
+import { ProductForm } from './features/inventory/components/ProductForm';
+import { LayoutGrid, Plus } from 'lucide-react';
 
 function App() {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Bar */}
@@ -27,15 +30,23 @@ function App() {
             </p>
           </div>
           <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-            <button className="block rounded-md bg-brand-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+            <button 
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center gap-2 rounded-md bg-brand-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition-colors"
+            >
+              <Plus size={16} />
               Add Product
             </button>
           </div>
         </div>
         
-        {/* Render our new table here */}
         <ProductTable />
       </main>
+
+      {/* Product Form Modal */}
+      {isFormOpen && (
+        <ProductForm onClose={() => setIsFormOpen(false)} />
+      )}
     </div>
   );
 }

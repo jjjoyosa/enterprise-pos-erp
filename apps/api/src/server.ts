@@ -7,6 +7,7 @@ import authRoutes from './modules/auth/routes/auth.routes';
 import productRoutes from './modules/products/routes/product.routes';
 import inventoryRoutes from './modules/inventory/routes/inventory.routes';
 import saleRoutes from './modules/sales/routes/sale.routes';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.get('/api/v1/tenant-test', (req, res) => {
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/sales', saleRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`[API] Server running on port ${PORT}`);

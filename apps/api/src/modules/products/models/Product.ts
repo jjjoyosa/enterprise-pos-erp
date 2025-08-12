@@ -30,6 +30,9 @@ const ProductSchema = new Schema({
 
 
 ProductSchema.index({ tenantId: 1, sku: 1 }, { unique: true });
-ProductSchema.index({ tenantId: 1, barcode: 1 }, { unique: true, sparse: true });
+ProductSchema.index(
+  { tenantId: 1, barcode: 1 }, 
+  { unique: true, partialFilterExpression: { barcode: { $type: "string" } } }
+);
 
 export default mongoose.model<IProduct>('Product', ProductSchema);
