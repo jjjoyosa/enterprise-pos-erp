@@ -1,23 +1,60 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProducts } from './hooks/useProducts';
+import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
-import { ShoppingBag, Trash2, Plus, Minus, CreditCard } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode } from 'lucide-react';
 
 function App() {
   const { data: products, isLoading } = useProducts();
   const { items, total, addItem, updateQuantity, removeItem, clearCart } = useCartStore();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 1. Initialize the global hardware scanner interceptor
+  useBarcodeScanner(products);
+
+  // 2. Perform lightning-fast local cache filtering for search queries
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return products;
+    
+    return products.filter(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.sku.toLowerCase().includes(query) || 
+      p.barcode?.toLowerCase().includes(query)
+    );
+  }, [products, searchQuery]);
 
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden text-gray-900">
       
-      {/* LEFT PANE: Product Grid */}
+      {/* LEFT PANE: Product Grid & Controls */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm h-16 flex items-center px-6 shrink-0 z-10">
-          <h1 className="text-xl font-bold text-gray-800">Enterprise POS</h1>
+        
+        {/* Responsive Header */}
+        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 shrink-0 z-10 gap-4">
+          <div className="flex items-center gap-2 font-bold text-xl text-gray-800 tracking-tight shrink-0">
+            Enterprise POS
+          </div>
+          
+          {/* Real-time Search Input Box */}
+          <div className="relative max-w-md w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text"
+              placeholder="Search product name, SKU, or barcode..."
+              className="w-full bg-gray-50 border border-gray-200 pl-10 pr-4 py-2 rounded-lg text-sm outline-none focus:bg-white focus:border-blue-500 transition-all shadow-inner"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-100 shrink-0">
+            <Barcode size={16} /> Scanner Active
+          </div>
         </header>
 
-        {/* Product Grid Area */}
+        {/* Dynamic Catalog Area */}
         <main className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex justify-center items-center h-full">
@@ -25,22 +62,31 @@ function App() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {products?.map((product) => (
+              {filteredProducts.map((product) => (
                 <button
                   key={product._id}
                   onClick={() => addItem(product)}
-                  className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md border border-gray-100 active:bg-blue-50 transition-all text-left h-32 flex flex-col justify-between"
+                  className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md border border-gray-100 active:bg-blue-50 transition-all text-left h-32 flex flex-col justify-between group"
                 >
-                  <span className="font-medium text-gray-800 line-clamp-2">{product.name}</span>
-                  <span className="text-blue-600 font-bold">₱{product.basePrice.toLocaleString()}</span>
+                  <div>
+                    <span className="font-medium text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors">{product.name}</span>
+                    <span className="text-[10px] text-gray-400 font-mono block mt-1">{product.sku}</span>
+                  </div>
+                  <span className="text-blue-600 font-bold">₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </button>
               ))}
+
+              {filteredProducts.length === 0 && (
+                <div className="col-span-full py-20 text-center text-gray-500">
+                  No matching items found in the catalog catalog.
+                </div>
+              )}
             </div>
           )}
         </main>
       </div>
 
-      {/* RIGHT PANE: Cart & Checkout */}
+      {/* RIGHT PANE: Cart Panel */}
       <div className="w-[400px] bg-white shadow-xl h-full flex flex-col shrink-0 z-20 border-l border-gray-200">
         
         {/* Cart Header */}
@@ -49,7 +95,7 @@ function App() {
             <ShoppingBag size={20} /> Current Order
           </div>
           {items.length > 0 && (
-            <button onClick={clearCart} className="text-red-500 hover:text-red-700 p-2">
+            <button onClick={clearCart} className="text-red-500 hover:text-red-700 p-2 transition-colors">
               <Trash2 size={20} />
             </button>
           )}
@@ -59,24 +105,27 @@ function App() {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400">
-              <ShoppingBag size={48} className="mb-4 opacity-50" />
-              <p>Cart is empty</p>
+              <ShoppingBag size={48} className="mb-4 opacity-50 text-gray-300" />
+              <p className="text-sm font-medium">Scan barcodes or select items</p>
             </div>
           ) : (
             items.map((item) => (
-              <div key={item.productId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div key={item.productId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100 animate-fadeIn">
                 <div className="flex-1 truncate pr-2">
-                  <div className="font-medium truncate">{item.name}</div>
-                  <div className="text-sm text-gray-500">₱{item.unitPrice.toLocaleString()}</div>
+                  <div className="font-medium truncate text-sm">{item.name}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">₱{item.unitPrice.toLocaleString()} each</div>
                 </div>
                 
-                <div className="flex items-center gap-3 bg-white rounded-md border border-gray-200 p-1">
-                  <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="p-1 hover:bg-gray-100 rounded">
-                    <Minus size={16} />
+                <div className="flex items-center gap-2 bg-white rounded-md border border-gray-200 p-1">
+                  <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
+                    <Minus size={14} />
                   </button>
-                  <span className="w-6 text-center font-medium">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="p-1 hover:bg-gray-100 rounded">
-                    <Plus size={16} />
+                  <span className="w-5 text-center font-semibold text-sm">{item.quantity}</span>
+                  <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors">
+                    <Plus size={14} />
+                  </button>
+                  <button onClick={() => removeItem(item.productId)} className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded ml-1 transition-colors">
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -84,18 +133,18 @@ function App() {
           )}
         </div>
 
-        {/* Totals & Pay Button */}
+        {/* Checkout Footer */}
         <div className="bg-gray-50 p-6 border-t border-gray-200 shrink-0">
           <div className="flex justify-between items-center mb-4 text-xl font-bold">
-            <span>Total</span>
-            <span className="text-blue-600">₱{total.toLocaleString()}</span>
+            <span className="text-gray-700 font-medium text-base">Total Due</span>
+            <span className="text-blue-600 text-2xl">₱{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
           
           <button 
             disabled={items.length === 0}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-sm cursor-pointer"
           >
-            <CreditCard size={24} /> Pay Now
+            <CreditCard size={22} /> Process Checkout
           </button>
         </div>
 
