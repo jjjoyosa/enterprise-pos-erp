@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { useProducts } from './hooks/useProducts';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
+import { CheckoutModal } from './components/CheckoutModal';
 import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode } from 'lucide-react';
 
 function App() {
   const { data: products, isLoading } = useProducts();
   const { items, total, addItem, updateQuantity, removeItem, clearCart } = useCartStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   // 1. Initialize the global hardware scanner interceptor
   useBarcodeScanner(products);
@@ -141,6 +143,7 @@ function App() {
           </div>
           
           <button 
+            onClick={() => setIsCheckoutOpen(true)}
             disabled={items.length === 0}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-sm cursor-pointer"
           >
@@ -149,6 +152,9 @@ function App() {
         </div>
 
       </div>
+      {isCheckoutOpen && (
+        <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />
+      )}
     </div>
   );
 }

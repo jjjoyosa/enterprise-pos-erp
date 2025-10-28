@@ -26,6 +26,11 @@ app.get('/health', (req, res) => {
 
 app.use('/api/v1/auth', authRoutes);
 
+app.use((req, res, next) => {
+  console.log(`[API] ${req.method} ${req.url} | Body:`, Object.keys(req.body).length ? req.body : 'No Body');
+  next();
+});
+
 
 app.use(tenantContext);
 
