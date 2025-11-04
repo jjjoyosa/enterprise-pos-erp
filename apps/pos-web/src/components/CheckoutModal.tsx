@@ -44,17 +44,29 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
 
   
   if (isSuccess) {
+    const isOffline = saleData?.isOffline;
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center transform transition-all">
-          <CheckCircle2 className="mx-auto h-16 w-16 text-green-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sale Complete!</h2>
-          <p className="text-gray-500 mb-6">Receipt No: <span className="font-mono font-medium text-gray-900">{saleData?.sale?.receiptNumber}</span></p>
+          <CheckCircle2 className={`mx-auto h-16 w-16 mb-4 ${isOffline ? 'text-amber-500' : 'text-green-500'}`} />
+          
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {isOffline ? 'Saved Offline' : 'Sale Complete!'}
+          </h2>
+          
+          <p className="text-gray-500 mb-2">Receipt No: <span className="font-mono font-medium text-gray-900">{saleData?.sale?.receiptNumber}</span></p>
+          
+          {isOffline && (
+            <p className="text-xs text-amber-600 font-medium bg-amber-50 rounded p-2 mb-4">
+              Internet disconnected. Transaction saved securely to device and will sync later.
+            </p>
+          )}
           
           {paymentMethod === 'CASH' && (
-            <div className="bg-green-50 rounded-lg p-4 mb-6">
-              <div className="text-sm text-green-800 font-medium">Change Due</div>
-              <div className="text-3xl font-bold text-green-600">
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100">
+              <div className="text-sm text-gray-600 font-medium">Change Due</div>
+              <div className="text-3xl font-bold text-gray-900">
                 ₱{(Number(amountTendered) - total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
             </div>
