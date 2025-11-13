@@ -12,24 +12,15 @@ interface SalePayload {
 }
 
 const processSale = async (payload: SalePayload) => {
-  try {
+  console.log('[CHECKOUT] 1. Process Sale Triggered');
+  
+  const handleOfflineSave = async () => {
+    console.log('[CHECKOUT] 2a. Routing to Offline Save');
+    const offlineReceiptNumber = `OFFLINE-${Date.now()}`;
     
-    const { data } = await api.post('/sales', {
-      ...payload,
-      warehouseId: DEV_WAREHOUSE_ID,
-      cashierId: DEV_CASHIER_ID,
-    });
-    return data;
-
-  } catch (error: any) {
-    
-    if (!error.response || error.code === 'ERR_NETWORK') {
-      console.warn('Network unreachable. Routing transaction to local IndexedDB.');
-      
-      
-      const offlineReceiptNumber = `OFFLINE-${Date.now()}`;
-      
-      const offlinePayload = {
+    try {
+      console.log('[CHECKOUT] 2b. Awaiting IndexedDB Put...');
+      await saveOfflineSale({
         receiptNumber: offlineReceiptNumber,
         warehouseId: DEV_WAREHOUSE_ID,
         cashierId: DEV_CASHIER_ID,
@@ -37,19 +28,42 @@ const processSale = async (payload: SalePayload) => {
         discount: payload.discount,
         items: payload.items,
         timestamp: new Date().toISOString()
-      };
-
-      
-      await saveOfflineSale(offlinePayload);
-
+      });
+      console.log('[CHECKOUT] 2c. IndexedDB Save Complete!');
       
       return { 
         message: 'Saved offline', 
         sale: { receiptNumber: offlineReceiptNumber },
         isOffline: true 
       };
+    } catch (dbError) {
+      console.error('[CHECKOUT] 2d. IndexedDB CRASH:', dbError);
+      throw dbError;
     }
+  };
+
+  console.log('[CHECKOUT] 3. Checking navigator.onLine:', navigator.onLine);
+  if (!navigator.onLine) {
+    return handleOfflineSave();
+  }
+
+  try {
+    console.log('[CHECKOUT] 4. Attempting Live API Call...');
+    const { data } = await api.post('/sales', {
+      ...payload,
+      warehouseId: DEV_WAREHOUSE_ID,
+      cashierId: DEV_CASHIER_ID,
+    });
+    console.log('[CHECKOUT] 5. Live API Call Successful!');
+    return data;
+
+  } catch (error: any) {
+    console.warn('[CHECKOUT] 6. Live API threw error:', error.code, error.message);
     
+    
+    if (!error.response || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+      return handleOfflineSave();
+    }
     
     throw error;
   }
@@ -58,5 +72,6 @@ const processSale = async (payload: SalePayload) => {
 export const useProcessSale = () => {
   return useMutation({
     mutationFn: processSale,
+    networkMode: 'always',
   });
 };

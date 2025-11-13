@@ -3,18 +3,20 @@ import { useProducts } from './hooks/useProducts';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
 import { CheckoutModal } from './components/CheckoutModal';
-import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode } from 'lucide-react';
+import { useNetworkSync } from './hooks/useNetworkSync';
+import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
 function App() {
   const { data: products, isLoading } = useProducts();
   const { items, total, addItem, updateQuantity, removeItem, clearCart } = useCartStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const { isOnline, isSyncing, lastSyncResult } = useNetworkSync();
 
-  // 1. Initialize the global hardware scanner interceptor
+  
   useBarcodeScanner(products);
 
-  // 2. Perform lightning-fast local cache filtering for search queries
+  
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     const query = searchQuery.toLowerCase().trim();
@@ -51,8 +53,30 @@ function App() {
             />
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-100 shrink-0">
-            <Barcode size={16} /> Scanner Active
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Sync Notification Pop-up */}
+            {lastSyncResult && (
+              <div className="text-xs font-medium bg-green-50 text-green-700 px-3 py-1.5 rounded-md border border-green-100 animate-fadeIn">
+                Recovered {lastSyncResult.syncedCount} offline orders
+              </div>
+            )}
+
+            {/* Dynamic Network Badge */}
+            <div className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border transition-colors ${
+              !isOnline 
+                ? 'bg-red-50 text-red-600 border-red-100'
+                : isSyncing 
+                  ? 'bg-blue-50 text-blue-600 border-blue-100'
+                  : 'bg-green-50 text-green-600 border-green-100'
+            }`}>
+              {!isOnline ? (
+                <><WifiOff size={16} /> Offline Mode</>
+              ) : isSyncing ? (
+                <><RefreshCw size={16} className="animate-spin" /> Syncing...</>
+              ) : (
+                <><Wifi size={16} /> Connected</>
+              )}
+            </div>
           </div>
         </header>
 

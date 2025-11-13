@@ -4,6 +4,7 @@ const DEVELOPMENT_TENANT_ID = '6a13eea1a686547665c727de';
 
 export const api = axios.create({
   baseURL: 'http://localhost:5000/api/v1',
+  timeout: 5000, 
   headers: {
     'Content-Type': 'application/json',
     'x-tenant-id': DEVELOPMENT_TENANT_ID
