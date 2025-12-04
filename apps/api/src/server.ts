@@ -7,7 +7,7 @@ import authRoutes from './modules/auth/routes/auth.routes';
 import productRoutes from './modules/products/routes/product.routes';
 import inventoryRoutes from './modules/inventory/routes/inventory.routes';
 import saleRoutes from './modules/sales/routes/sale.routes';
-import mongoose from 'mongoose';
+import shiftRoutes from './modules/sales/routes/shift.routes';
 
 dotenv.config();
 
@@ -31,7 +31,7 @@ app.use((req, res, next) => {
   next();
 });
 
-
+app.use('/api/v1/shifts', shiftRoutes);
 app.use(tenantContext);
 
 

@@ -4,6 +4,8 @@ import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
 import { CheckoutModal } from './components/CheckoutModal';
 import { useNetworkSync } from './hooks/useNetworkSync';
+import { useCurrentShift } from './hooks/useShift';
+import { ShiftGuard } from './components/ShiftGuard';
 import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
 function App() {
@@ -12,6 +14,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const { isOnline, isSyncing, lastSyncResult } = useNetworkSync();
+  const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
 
   
   useBarcodeScanner(products);
@@ -176,6 +179,14 @@ function App() {
         </div>
 
       </div>
+
+      
+      {/* Shift Guard Layer */}
+      {!isShiftLoading && !currentShift && (
+        <ShiftGuard />
+      )}
+
+      {/* Checkout Modal */}
       {isCheckoutOpen && (
         <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />
       )}
