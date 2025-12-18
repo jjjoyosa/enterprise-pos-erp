@@ -6,7 +6,8 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { useNetworkSync } from './hooks/useNetworkSync';
 import { useCurrentShift } from './hooks/useShift';
 import { ShiftGuard } from './components/ShiftGuard';
-import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { CloseShiftModal } from './components/CloseShiftModal';
+import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw, LogOut } from 'lucide-react';
 
 function App() {
   const { data: products, isLoading } = useProducts();
@@ -15,7 +16,7 @@ function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const { isOnline, isSyncing, lastSyncResult } = useNetworkSync();
   const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
-
+  const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
   
   useBarcodeScanner(products);
 
@@ -43,6 +44,15 @@ function App() {
           <div className="flex items-center gap-2 font-bold text-xl text-gray-800 tracking-tight shrink-0">
             Enterprise POS
           </div>
+
+          {currentShift && (
+              <button 
+                onClick={() => setIsCloseShiftOpen(true)}
+                className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-red-200"
+              >
+                <LogOut size={14} /> Close Register
+              </button>
+            )}
           
           {/* Real-time Search Input Box */}
           <div className="relative max-w-md w-full">
@@ -184,6 +194,10 @@ function App() {
       {/* Shift Guard Layer */}
       {!isShiftLoading && !currentShift && (
         <ShiftGuard />
+      )}
+
+      {isCloseShiftOpen && (
+        <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />
       )}
 
       {/* Checkout Modal */}

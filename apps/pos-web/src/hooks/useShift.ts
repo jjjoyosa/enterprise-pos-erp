@@ -35,3 +35,14 @@ export const useOpenShift = () => {
     }
   });
 };
+
+
+export const useCloseShift = () => {
+  
+  return useMutation({
+    mutationFn: async (endingCash: number) => {
+      const { data } = await api.post('/shifts/close', { endingCash });
+      return data;
+    },
+  });
+};
