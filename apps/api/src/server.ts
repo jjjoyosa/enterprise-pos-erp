@@ -8,6 +8,7 @@ import productRoutes from './modules/products/routes/product.routes';
 import inventoryRoutes from './modules/inventory/routes/inventory.routes';
 import saleRoutes from './modules/sales/routes/sale.routes';
 import shiftRoutes from './modules/sales/routes/shift.routes';
+import analyticsRoutes from './modules/sales/routes/analytics.routes';
 
 dotenv.config();
 
@@ -22,6 +23,8 @@ app.use(express.json());
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'enterprise-pos-erp-api' });
 });
+
+app.use('/api/v1/analytics', analyticsRoutes);
 
 
 app.use('/api/v1/auth', authRoutes);
