@@ -49,11 +49,7 @@ const processSale = async (payload: SalePayload) => {
 
   try {
     console.log('[CHECKOUT] 4. Attempting Live API Call...');
-    const { data } = await api.post('/sales', {
-      ...payload,
-      warehouseId: DEV_WAREHOUSE_ID,
-      cashierId: DEV_CASHIER_ID,
-    });
+    const { data } = await api.post('/sales', payload);
     console.log('[CHECKOUT] 5. Live API Call Successful!');
     return data;
 

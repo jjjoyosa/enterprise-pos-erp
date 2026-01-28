@@ -7,9 +7,17 @@ import { useNetworkSync } from './hooks/useNetworkSync';
 import { useCurrentShift } from './hooks/useShift';
 import { ShiftGuard } from './components/ShiftGuard';
 import { CloseShiftModal } from './components/CloseShiftModal';
-import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw, LogOut } from 'lucide-react';
+import { Login } from './components/Login';
+import { logout } from './hooks/useAuth';
+import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw, LogOut, UserMinus } from 'lucide-react';
 
 function App() {
+
+  const isAuthenticated = !!localStorage.getItem('erp_token');
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
   const { data: products, isLoading } = useProducts();
   const { items, total, addItem, updateQuantity, removeItem, clearCart } = useCartStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +61,14 @@ function App() {
                 <LogOut size={14} /> Close Register
               </button>
             )}
+
+          {/* NEW: Logout Button */}
+            <button 
+              onClick={logout}
+              className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors border border-gray-200"
+            >
+              <UserMinus size={14} /> Logout
+            </button>
           
           {/* Real-time Search Input Box */}
           <div className="relative max-w-md w-full">

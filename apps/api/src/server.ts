@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { tenantContext } from './middleware/tenant';
 import { connectDB } from './config/db';
 import authRoutes from './modules/auth/routes/auth.routes';
 import productRoutes from './modules/products/routes/product.routes';
@@ -35,12 +34,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/v1/shifts', shiftRoutes);
-app.use(tenantContext);
 
-
-app.get('/api/v1/tenant-test', (req, res) => {
-  res.json({ message: 'Tenant context injected.', active_tenant: req.tenantId });
-});
 
 
 app.use('/api/v1/products', productRoutes);

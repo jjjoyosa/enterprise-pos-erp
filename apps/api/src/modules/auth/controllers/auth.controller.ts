@@ -3,6 +3,10 @@ import Tenant from '../../organizations/models/Tenant';
 import Role from '../models/Role';
 import User from '../models/User';
 import { hashPassword } from '../../../utils/hash';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_enterprise_key_2026';
 
 export const registerTenant = async (req: Request, res: Response) => {
   try {
@@ -53,5 +57,48 @@ export const registerTenant = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to register tenant', details: error.message });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    
+    const user = await User.findOne({ email, isActive: true });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials or inactive account.' });
+    }
+
+    
+    
+    
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials.' });
+    }
+
+    
+    const payload = {
+      userId: user._id,
+      tenantId: user.tenantId,
+      roleId: user.roleId
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        tenantId: user.tenantId
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Login failed', details: error.message });
   }
 };
