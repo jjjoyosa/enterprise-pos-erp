@@ -117,3 +117,65 @@ export const getSales = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
+export const getDashboardAnalytics = async (req: Request, res: Response) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysSales = await Sale.find({ 
+      tenantId, 
+      createdAt: { $gte: today } 
+    });
+
+    const todaysRevenue = todaysSales.reduce((sum, sale) => sum + sale.total, 0);
+    const orderCount = todaysSales.length;
+
+    
+    
+    const lowStockProducts = await Product.find({ 
+      tenantId, 
+      stock: { $lt: 10 } 
+    }).select('name stock sku').limit(5);
+
+    
+    
+    const topProducts = await Sale.aggregate([
+      { $match: { tenantId: tenantId } }, 
+      { $unwind: "$items" }, 
+      { $group: { 
+          _id: "$items.productId", 
+          totalSold: { $sum: "$items.quantity" },
+          revenue: { $sum: "$items.subtotal" }
+      }},
+      { $sort: { totalSold: -1 } }, 
+      { $limit: 5 }
+    ]);
+
+    
+    const populatedTopProducts = await Promise.all(topProducts.map(async (p) => {
+      const product = await Product.findById(p._id).select('name');
+      return {
+        name: product ? product.name : 'Unknown Product',
+        totalSold: p.totalSold,
+        revenue: p.revenue
+      };
+    }));
+
+    res.status(200).json({
+      todaysRevenue,
+      orderCount,
+      lowStockProducts,
+      topProducts: populatedTopProducts
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};

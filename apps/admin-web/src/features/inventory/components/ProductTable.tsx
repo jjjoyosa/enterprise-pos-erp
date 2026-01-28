@@ -1,71 +1,111 @@
-import React from 'react';
-import { useProducts } from '../api/useProducts';
-import { Package, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useProducts } from '../api/useProducts'; 
+import { Edit, Trash2, Search, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 
-export const ProductTable = () => {
-  const { data: products, isLoading, isError } = useProducts();
+interface ProductTableProps {
+  onOpenForm: () => void;
+}
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="animate-spin text-brand-600" size={32} />
-      </div>
-    );
-  }
+export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
+  const { data: products, isLoading } = useProducts();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  if (isError) {
-    return (
-      <div className="bg-red-50 text-red-600 p-4 rounded-md">
-        Failed to load product catalog. Ensure the API is running.
-      </div>
-    );
-  }
+  // Safely filter based ONLY on the properties available in your new Product interface
+  const filteredProducts = products?.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   return (
-    <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Product Name</th>
-            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">SKU</th>
-            <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Category</th>
-            <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Price</th>
-            <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {products?.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="py-10 text-center text-sm text-gray-500">
-                <Package className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                No products found.
-              </td>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-gray-100 bg-gray-50">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text"
+            placeholder="Search by product name or SKU..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-white border-b border-gray-100 text-xs uppercase text-gray-400 font-bold tracking-wider">
+              <th className="p-4 pl-6">Product Details</th>
+              <th className="p-4">SKU</th>
+              <th className="p-4 text-right">Pricing (Base / Cost)</th>
+              <th className="p-4 text-center">Inventory Tracking</th>
+              <th className="p-4 pr-6 text-right">Actions</th>
             </tr>
-          ) : (
-            products?.map((product) => (
-              <tr key={product._id} className="hover:bg-gray-50">
-                <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                  {product.name}
-                </td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 font-mono">
-                  {product.sku}
-                </td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  {product.categoryId?.name || 'Uncategorized'}
-                </td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right font-medium">
-                  ₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
-                  <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                    Active
-                  </span>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} className="text-center p-12 text-gray-400">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  Loading catalog...
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : filteredProducts.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center p-12 text-gray-400">
+                  <AlertCircle size={32} className="mx-auto mb-3 opacity-30" />
+                  <p>No products found matching "{searchQuery}"</p>
+                </td>
+              </tr>
+            ) : (
+              filteredProducts.map((product) => (
+                <tr key={product._id} className="hover:bg-blue-50/50 transition-colors group">
+                  <td className="p-4 pl-6">
+                    <div className="font-bold text-gray-900">{product.name}</div>
+                    {/* Safely rendering the nested category object */}
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {product.categoryId?.name || 'Uncategorized'}
+                    </div>
+                  </td>
+                  <td className="p-4 font-mono text-sm text-gray-800 font-medium">
+                    {product.sku}
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="font-bold text-blue-600">
+                      ₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      Cost: ₱{product.costPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                  </td>
+                  <td className="p-4 text-center">
+                    {/* Visual badge for the boolean trackInventory field */}
+                    {product.trackInventory ? (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                        <CheckCircle2 size={12} /> Tracked
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                        <XCircle size={12} /> Unmonitored
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4 pr-6">
+                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200">
+                        <Edit size={16} />
+                      </button>
+                      <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

@@ -1,22 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 
-interface DashboardMetrics {
-  todayGross: number;
-  todayCount: number;
-  weeklyRevenue: Array<{ _id: string; total: number }>;
-  lowStockItems: Array<{ _id: string; name: string; sku: string; currentStock: number }>;
+
+export interface AnalyticsData {
+  todaysRevenue: number;
+  orderCount: number;
+  lowStockProducts: Array<{
+    _id: string;
+    name: string;
+    sku: string;
+    stock: number;
+  }>;
+  topProducts: Array<{
+    name: string;
+    totalSold: number;
+    revenue: number;
+  }>;
 }
 
-const fetchMetrics = async (): Promise<DashboardMetrics> => {
-  const { data } = await api.get('/analytics/dashboard');
-  return data;
-};
-
 export const useAnalytics = () => {
-  return useQuery({
-    queryKey: ['dashboard-metrics'],
-    queryFn: fetchMetrics,
+  
+  return useQuery<AnalyticsData>({
+    queryKey: ['dashboard-analytics'],
+    queryFn: async () => {
+      const { data } = await api.get('/sales/analytics');
+      return data;
+    },
     refetchInterval: 60000, 
   });
 };
