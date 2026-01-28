@@ -52,8 +52,8 @@ export const processSale = async (req: Request, res: Response) => {
       });
     }
 
-    const calculatedTax = calculatedSubtotal * 0.12; 
-    const finalTotal = calculatedSubtotal + calculatedTax - discount;
+    const finalTotal = calculatedSubtotal - discount;
+    const calculatedTax = finalTotal - (finalTotal / 1.12);
     const receiptNumber = generateReceiptNumber();
 
     

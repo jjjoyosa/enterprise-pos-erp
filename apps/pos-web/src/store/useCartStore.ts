@@ -25,9 +25,16 @@ interface CartState {
 
 
 const calculateTotals = (items: CartItem[], discount: number) => {
+  
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-  const tax = subtotal * 0.12; 
-  const total = subtotal + tax - discount;
+  
+  
+  
+  const total = Math.max(0, subtotal - discount);
+  
+  
+  const tax = total - (total / 1.12); 
+  
   return { subtotal, tax, total };
 };
 

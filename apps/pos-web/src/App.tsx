@@ -10,7 +10,6 @@ import { Login } from './components/Login';
 import { logout } from './hooks/useAuth';
 import { useSyncOfflineSales } from './hooks/useSync';
 import { getPendingSales } from './services/db';
-import { useSalesHistory } from './hooks/useSalesHistory';
 import { SalesHistoryModal } from './components/SalesHistoryModal';
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 

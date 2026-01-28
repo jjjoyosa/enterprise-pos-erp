@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSalesHistory } from '../hooks/useSalesHistory';
-import { X, Receipt, Calendar, CreditCard, ChevronDown, ChevronUp, Package, Loader2 } from 'lucide-react';
+import { ReceiptTemplate } from './ReceiptTemplate';
+import { X, Receipt,Printer, Calendar, CreditCard, ChevronDown, ChevronUp, Package, Loader2 } from 'lucide-react';
 
 interface SalesHistoryModalProps {
   onClose: () => void;
@@ -9,6 +10,17 @@ interface SalesHistoryModalProps {
 export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose }) => {
   const { data: sales, isLoading } = useSalesHistory();
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
+  const [saleToPrint, setSaleToPrint] = useState<any>(null);
+
+  const handlePrint = (sale: any) => {
+  setSaleToPrint(sale);
+  
+  setTimeout(() => {
+    window.print();
+    
+    
+  }, 100);
+};
 
   const toggleExpand = (id: string) => {
     setExpandedSaleId(prev => prev === id ? null : id);
@@ -89,6 +101,12 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                           <Package size={14} /> Purchased Items
                         </h4>
+                        <button 
+                        onClick={() => handlePrint(sale)}
+                        className="flex items-center gap-2 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-200 transition-colors"
+                      >
+                        <Printer size={14} /> Print Receipt
+                      </button>
                         <div className="space-y-2">
                           {sale.items.map((item: any, idx: number) => (
                             <div key={idx} className="flex justify-between items-center text-sm">
@@ -128,6 +146,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
             </div>
           )}
         </div>
+        <ReceiptTemplate sale={saleToPrint} />
       </div>
     </div>
   );

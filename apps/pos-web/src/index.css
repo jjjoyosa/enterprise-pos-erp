@@ -5,3 +5,38 @@
     @apply bg-gray-100 text-gray-900 antialiased overflow-hidden; /* Prevent full-page scroll on a POS */
   }
 }
+
+/* Thermal Receipt Print Configuration */
+@media print {
+  @page {
+    margin: 0;
+    size: 80mm auto; 
+  }
+  
+  body {
+    margin: 0;
+    background-color: white;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* 1. Hide absolutely everything on the screen */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2. Un-hide ONLY the receipt container and all the text inside it */
+  #printable-receipt-container, 
+  #printable-receipt-container * {
+    visibility: visible;
+  }
+
+  /* 3. Force the receipt to the absolute top-left corner of the paper */
+  #printable-receipt-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10px; /* Optional: adds a tiny bit of breathing room for the printer margin */
+  }
+}
