@@ -10,9 +10,12 @@ import { Login } from './components/Login';
 import { logout } from './hooks/useAuth';
 import { useSyncOfflineSales } from './hooks/useSync';
 import { getPendingSales } from './services/db';
+import { useSalesHistory } from './hooks/useSalesHistory';
+import { SalesHistoryModal } from './components/SalesHistoryModal';
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
-  Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff 
+  Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
+  History 
 } from 'lucide-react';
 
 function App() {
@@ -37,6 +40,9 @@ function App() {
   const [offlineCount, setOfflineCount] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { mutate: syncSales, isPending: isSyncingSales } = useSyncOfflineSales();
+
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
 
   useEffect(() => {
     const checkPending = async () => {
@@ -108,6 +114,13 @@ function App() {
             >
               <UserMinus size={14} /> Logout
             </button>
+
+            <button 
+           onClick={() => setIsHistoryOpen(true)}
+           className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-blue-200"
+         >
+           <History size={14} /> History
+         </button>
           </div>
           
           {/* Real-time Search Input Box */}
@@ -259,6 +272,10 @@ function App() {
 
       {isCheckoutOpen && (
         <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />
+      )}
+
+      {isHistoryOpen && (
+        <SalesHistoryModal onClose={() => setIsHistoryOpen(false)} />
       )}
     </div>
   );

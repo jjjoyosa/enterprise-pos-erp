@@ -95,3 +95,25 @@ export const processSale = async (req: Request, res: Response) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+
+
+export const getSales = async (req: Request, res: Response) => {
+  try {
+    
+    const tenantId = req.tenantId;
+    
+    if (!tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: Missing tenant context' });
+    }
+
+    
+    const sales = await Sale.find({ tenantId })
+      .sort({ createdAt: -1 }) 
+      .limit(50); 
+
+    res.status(200).json(sales);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
