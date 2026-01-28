@@ -1,34 +1,72 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useProducts } from './hooks/useProducts';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
 import { CheckoutModal } from './components/CheckoutModal';
-import { useNetworkSync } from './hooks/useNetworkSync';
 import { useCurrentShift } from './hooks/useShift';
 import { ShiftGuard } from './components/ShiftGuard';
 import { CloseShiftModal } from './components/CloseShiftModal';
 import { Login } from './components/Login';
 import { logout } from './hooks/useAuth';
-import { ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, Barcode, Wifi, WifiOff, RefreshCw, LogOut, UserMinus } from 'lucide-react';
+import { useSyncOfflineSales } from './hooks/useSync';
+import { getPendingSales } from './services/db';
+import { 
+  ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
+  Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff 
+} from 'lucide-react';
 
 function App() {
-
+  // --- 1. AUTHENTICATION ---
   const isAuthenticated = !!localStorage.getItem('erp_token');
   if (!isAuthenticated) {
     return <Login />;
   }
 
+  // --- 2. GLOBAL STATE & HOOKS ---
   const { data: products, isLoading } = useProducts();
   const { items, total, addItem, updateQuantity, removeItem, clearCart } = useCartStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const { isOnline, isSyncing, lastSyncResult } = useNetworkSync();
+  
   const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
   
   useBarcodeScanner(products);
 
-  
+  // --- 3. SYNC ENGINE LOGIC (Action 27) ---
+  const [offlineCount, setOfflineCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const { mutate: syncSales, isPending: isSyncingSales } = useSyncOfflineSales();
+
+  useEffect(() => {
+    const checkPending = async () => {
+      const sales = await getPendingSales();
+      setOfflineCount(sales.length);
+    };
+    checkPending();
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      checkPending(); // Re-check local storage when internet returns
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const handleSync = () => {
+    syncSales(undefined, {
+      onSuccess: () => setOfflineCount(0)
+    });
+  };
+
+  // --- 4. CATALOG FILTERING ---
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     const query = searchQuery.toLowerCase().trim();
@@ -41,6 +79,7 @@ function App() {
     );
   }, [products, searchQuery]);
 
+  // --- 5. RENDER UI ---
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden text-gray-900">
       
@@ -53,7 +92,8 @@ function App() {
             Enterprise POS
           </div>
 
-          {currentShift && (
+          <div className="flex items-center gap-2 shrink-0">
+            {currentShift && (
               <button 
                 onClick={() => setIsCloseShiftOpen(true)}
                 className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-red-200"
@@ -62,13 +102,13 @@ function App() {
               </button>
             )}
 
-          {/* NEW: Logout Button */}
             <button 
               onClick={logout}
               className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors border border-gray-200"
             >
               <UserMinus size={14} /> Logout
             </button>
+          </div>
           
           {/* Real-time Search Input Box */}
           <div className="relative max-w-md w-full">
@@ -82,28 +122,31 @@ function App() {
             />
           </div>
 
+          {/* Network & Sync Status Area */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Sync Notification Pop-up */}
-            {lastSyncResult && (
-              <div className="text-xs font-medium bg-green-50 text-green-700 px-3 py-1.5 rounded-md border border-green-100 animate-fadeIn">
-                Recovered {lastSyncResult.syncedCount} offline orders
-              </div>
+            
+            {/* THE NEW YELLOW SYNC BUTTON */}
+            {offlineCount > 0 && (
+              <button 
+                onClick={handleSync}
+                disabled={isSyncingSales}
+                className="flex items-center gap-2 text-xs font-bold bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-md hover:bg-yellow-200 transition-colors border border-yellow-200 shadow-sm"
+              >
+                {isSyncingSales ? <RefreshCw className="animate-spin" size={14} /> : <CloudOff size={14} />}
+                Sync {offlineCount} Pending
+              </button>
             )}
 
             {/* Dynamic Network Badge */}
             <div className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border transition-colors ${
               !isOnline 
                 ? 'bg-red-50 text-red-600 border-red-100'
-                : isSyncing 
-                  ? 'bg-blue-50 text-blue-600 border-blue-100'
-                  : 'bg-green-50 text-green-600 border-green-100'
+                : 'bg-green-50 text-green-600 border-green-100'
             }`}>
               {!isOnline ? (
-                <><WifiOff size={16} /> Offline Mode</>
-              ) : isSyncing ? (
-                <><RefreshCw size={16} className="animate-spin" /> Syncing...</>
+                <><WifiOff size={14} /> Offline Mode</>
               ) : (
-                <><Wifi size={16} /> Connected</>
+                <><Wifi size={14} /> Connected</>
               )}
             </div>
           </div>
@@ -133,7 +176,7 @@ function App() {
 
               {filteredProducts.length === 0 && (
                 <div className="col-span-full py-20 text-center text-gray-500">
-                  No matching items found in the catalog catalog.
+                  No matching items found in the catalog.
                 </div>
               )}
             </div>
@@ -203,11 +246,9 @@ function App() {
             <CreditCard size={22} /> Process Checkout
           </button>
         </div>
-
       </div>
 
-      
-      {/* Shift Guard Layer */}
+      {/* MODALS & GUARDS */}
       {!isShiftLoading && !currentShift && (
         <ShiftGuard />
       )}
@@ -216,7 +257,6 @@ function App() {
         <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />
       )}
 
-      {/* Checkout Modal */}
       {isCheckoutOpen && (
         <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />
       )}
