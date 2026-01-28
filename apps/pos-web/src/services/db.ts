@@ -7,8 +7,6 @@ interface POSDatabase extends DBSchema {
     key: string; 
     value: {
       receiptNumber: string;
-      warehouseId: string;
-      cashierId: string;
       paymentMethod: string;
       discount: number;
       items: Array<{ productId: string; quantity: number }>;

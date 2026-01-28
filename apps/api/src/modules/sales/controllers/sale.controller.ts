@@ -3,12 +3,35 @@ import Sale from '../models/Sale';
 import Product from '../../products/models/Product';
 import StockMovement from '../../inventory/models/StockMovement';
 import Inventory from '../../inventory/models/Inventory';
+import Shift from '../models/Shift'; 
 import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
-    const { warehouseId, cashierId, items, paymentMethod, discount = 0 } = req.body;
+    
+    const { items, paymentMethod, discount = 0 } = req.body;
+    
+    
     const tenantId = req.tenantId;
+    const cashierId = req.userId;
+
+    if (!cashierId || !tenantId) {
+      return res.status(401).json({ error: 'Unauthorized: Missing identity context' });
+    }
+
+    
+    const currentShift = await Shift.findOne({ 
+      cashierId, 
+      tenantId, 
+      status: 'OPEN' 
+    });
+
+    if (!currentShift) {
+      return res.status(403).json({ error: 'Cannot process sale: Register is locked.' });
+    }
+
+    
+    const warehouseId = currentShift.warehouseId;
 
     let calculatedSubtotal = 0;
     const processedItems = [];
@@ -29,17 +52,16 @@ export const processSale = async (req: Request, res: Response) => {
       });
     }
 
-    
     const calculatedTax = calculatedSubtotal * 0.12; 
     const finalTotal = calculatedSubtotal + calculatedTax - discount;
-
     const receiptNumber = generateReceiptNumber();
 
     
     const newSale = await Sale.create({
       tenantId,
-      warehouseId,
-      cashierId,
+      warehouseId, 
+      cashierId,   
+      shiftId: currentShift._id, 
       receiptNumber,
       items: processedItems,
       subtotal: calculatedSubtotal,
@@ -51,7 +73,6 @@ export const processSale = async (req: Request, res: Response) => {
 
     
     for (const item of processedItems) {
-      
       await StockMovement.create({
         tenantId,
         productId: item.productId,
@@ -62,7 +83,6 @@ export const processSale = async (req: Request, res: Response) => {
         notes: 'POS Sale'
       });
 
-      
       await Inventory.findOneAndUpdate(
         { tenantId, productId: item.productId, warehouseId },
         { $inc: { quantity: -Math.abs(item.quantity) } },

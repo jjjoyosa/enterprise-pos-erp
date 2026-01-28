@@ -2,8 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { saveOfflineSale } from '../services/db';
 
-const DEV_WAREHOUSE_ID = '6a13f0053e459be6ae886552'; 
-const DEV_CASHIER_ID = '6a13eea1a686547665c727e2';
+
 
 interface SalePayload {
   paymentMethod: 'CASH' | 'CARD' | 'GCASH' | 'MAYA';
@@ -20,15 +19,16 @@ const processSale = async (payload: SalePayload) => {
     
     try {
       console.log('[CHECKOUT] 2b. Awaiting IndexedDB Put...');
+      
+      
       await saveOfflineSale({
         receiptNumber: offlineReceiptNumber,
-        warehouseId: DEV_WAREHOUSE_ID,
-        cashierId: DEV_CASHIER_ID,
         paymentMethod: payload.paymentMethod,
         discount: payload.discount,
         items: payload.items,
         timestamp: new Date().toISOString()
       });
+      
       console.log('[CHECKOUT] 2c. IndexedDB Save Complete!');
       
       return { 
@@ -49,13 +49,15 @@ const processSale = async (payload: SalePayload) => {
 
   try {
     console.log('[CHECKOUT] 4. Attempting Live API Call...');
+    
+    
     const { data } = await api.post('/sales', payload);
+    
     console.log('[CHECKOUT] 5. Live API Call Successful!');
     return data;
 
   } catch (error: any) {
     console.warn('[CHECKOUT] 6. Live API threw error:', error.code, error.message);
-    
     
     if (!error.response || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
       return handleOfflineSave();
