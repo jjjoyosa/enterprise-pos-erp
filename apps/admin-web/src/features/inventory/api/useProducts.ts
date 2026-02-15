@@ -8,7 +8,7 @@ export interface Product {
   basePrice: number;
   costPrice: number;
   trackInventory: boolean;
-  categoryId?: {
+  categoryId?: string |  {
     _id: string;
     name: string;
   };

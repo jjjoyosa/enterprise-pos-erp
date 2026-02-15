@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Activity, TrendingUp, Database, Package, Plus, Lock } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
+import { ProductForm } from './features/inventory/components/ProductForm';
 
 function App() {
   
@@ -84,9 +85,11 @@ function App() {
             </div>
 
             <ProductTable onOpenForm={() => setIsModalOpen(true)} />
+            <ProductForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             
           </div>
         )}
+        
       </main>
     </div>
   );

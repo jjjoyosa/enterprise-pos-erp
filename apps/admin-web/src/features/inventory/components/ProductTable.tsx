@@ -64,7 +64,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
                     <div className="font-bold text-gray-900">{product.name}</div>
                     {/* Safely rendering the nested category object */}
                     <div className="text-xs text-gray-500 mt-0.5">
-                      {product.categoryId?.name || 'Uncategorized'}
+                      {typeof product.categoryId === 'object' && product.categoryId !== null 
+                        ? product.categoryId.name 
+                        : 'Uncategorized'}
                     </div>
                   </td>
                   <td className="p-4 font-mono text-sm text-gray-800 font-medium">
