@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen } from 'lucide-react';
-import { useCreateProduct } from '../api/useProducts'; 
+import { useCreateProduct, useUpdateProduct } from '../api/useProducts'; 
+import type { Product } from '../api/useProducts';
+import { useCategories } from '../api/useCategories'; 
 
 interface ProductFormProps {
   isOpen: boolean;
   onClose: () => void;
+  productToEdit?: Product | null;
 }
 
-export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => {
+export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, productToEdit }) => {
+  const isEditMode = !!productToEdit;
   const createProductMutation = useCreateProduct();
-
+  const updateProductMutation = useUpdateProduct();
+  const { data: categories = [], isLoading, isError } = useCategories();
   
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -20,15 +26,28 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
     categoryId: '' 
   });
 
-  if (!isOpen) return null;
-
-  
+  useEffect(() => {
+    if (productToEdit) {
+      setFormData({
+        name: productToEdit.name || '',
+        sku: productToEdit.sku || '',
+        basePrice: productToEdit.basePrice?.toString() || '',
+        costPrice: productToEdit.costPrice?.toString() || '',
+        trackInventory: productToEdit.trackInventory ?? true,
+        
+        categoryId: (typeof productToEdit.categoryId === 'object' && productToEdit.categoryId !== null)
+          ? productToEdit.categoryId._id 
+          : (productToEdit.categoryId || '')
+      });
+    } else {
+      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '' });
+    }
+  }, [productToEdit, isOpen]);
   const generateSKU = () => {
     if (!formData.name) {
       alert("Please enter a product name first!");
       return;
     }
-    
     const prefix = formData.name.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     setFormData({ ...formData, sku: `${prefix}-${randomNum}` });
@@ -36,8 +55,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    
     const payload = {
       name: formData.name,
       sku: formData.sku,
@@ -48,15 +65,20 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
     };
 
     try {
-      await createProductMutation.mutateAsync(payload);
-      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '' });
+      if (isEditMode) {
+        await updateProductMutation.mutateAsync({ id: productToEdit!._id, data: payload });
+      } else {
+        await createProductMutation.mutateAsync(payload);
+      }
       onClose();
     } catch (error) {
-      console.error("Failed to create product:", error);
+      console.error("Failed to save product:", error);
       alert("Failed to save product. Check the console for details.");
     }
   };
 
+  if (!isOpen) return null;
+  if (isLoading) return <div>Loading...</div>;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -67,8 +89,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
               <Package size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Add New Product</h2>
-              <p className="text-xs text-gray-500 font-medium">Create a new SKU in the master catalog</p>
+              <h2 className="text-xl font-bold text-gray-900">
+                {isEditMode ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              <p className="text-xs text-gray-500 font-medium">
+                {isEditMode ? 'Update catalog details' : 'Create a new SKU in the master catalog'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 bg-gray-200/50 hover:bg-gray-200 p-2 rounded-full transition-colors">
@@ -93,43 +119,36 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
               />
             </div>
 
-            {/* NEW: Category Dropdown */}
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
                 <FolderOpen size={16} className="text-gray-400" /> Category
               </label>
               <select
-                required
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                value={formData.categoryId}
-                onChange={e => setFormData({...formData, categoryId: e.target.value})}
-              >
-                <option value="" disabled>Select a Category...</option>
-                {/* Temporary valid Mongo ObjectIds so the backend doesn't crash. 
-                    You will replace these with real categories later! */}
-                <option value="65a1b2c3d4e5f6a7b8c9d0e1">Electronics</option>
-                <option value="65a1b2c3d4e5f6a7b8c9d0e2">Peripherals</option>
-                <option value="65a1b2c3d4e5f6a7b8c9d0e3">Office Supplies</option>
-              </select>
+    value={formData.categoryId}
+    onChange={e => setFormData({...formData, categoryId: e.target.value})}
+  >
+    <option value="">Select a Category...</option>
+    {categories.map((cat) => (
+      <option key={cat._id} value={cat._id}>{cat.name}</option>
+    ))}
+  </select>
             </div>
 
-            {/* UPDATED: SKU Field with Auto-Generate Button */}
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-sm font-bold text-gray-700 flex justify-between items-center">
-                <span className="flex items-center gap-2"><Hash size={16} className="text-gray-400" /> Stock Keeping Unit (SKU)</span>
-                <button 
-                  type="button" 
-                  onClick={generateSKU}
-                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-bold"
-                >
-                  <Wand2 size={12} /> Auto-Generate
-                </button>
+                <span className="flex items-center gap-2"><Hash size={16} className="text-gray-400" /> SKU</span>
+                {!isEditMode && (
+                  <button type="button" onClick={generateSKU} className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-bold">
+                    <Wand2 size={12} /> Auto-Generate
+                  </button>
+                )}
               </label>
               <input 
                 required
+                disabled={isEditMode}
                 type="text" 
                 placeholder="e.g., ACME-KB-01"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm outline-none"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 font-mono text-sm outline-none ${isEditMode ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-200'}`}
                 value={formData.sku}
                 onChange={e => setFormData({...formData, sku: e.target.value.toUpperCase()})}
               />
@@ -142,9 +161,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
               <input 
                 required
                 type="number" 
-                min="0"
                 step="0.01"
-                placeholder="0.00"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.basePrice}
                 onChange={e => setFormData({...formData, basePrice: e.target.value})}
@@ -158,9 +175,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
               <input 
                 required
                 type="number" 
-                min="0"
                 step="0.01"
-                placeholder="0.00"
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.costPrice}
                 onChange={e => setFormData({...formData, costPrice: e.target.value})}
@@ -179,38 +194,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose }) => 
                   <div className="text-sm font-bold text-gray-700 flex items-center gap-2">
                     <CheckSquare size={16} className="text-gray-400" /> Track Inventory Levels
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">Enable this to monitor stock and receive critical low-stock alerts.</p>
                 </div>
               </label>
             </div>
-
           </div>
 
           <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-8">
-            <button 
-              type="button" 
-              onClick={onClose}
-              disabled={createProductMutation.isPending}
-              className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              disabled={createProductMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
-            >
-              {createProductMutation.isPending ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Saving...
-                </>
-              ) : (
-                'Save Product'
-              )}
+            <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+            <button type="submit" className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+              {createProductMutation.isPending || updateProductMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : 'Save Product'}
             </button>
           </div>
         </form>
-
       </div>
     </div>
   );

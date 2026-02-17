@@ -25,7 +25,11 @@ const ProductSchema = new Schema({
   costPrice: { type: Number, required: true, min: 0 },
   trackInventory: { type: Boolean, default: true },
   hasVariants: { type: Boolean, default: false },
-  status: { type: String, enum: ['ACTIVE', 'ARCHIVED'], default: 'ACTIVE' }
+  status: { type: String, enum: ['ACTIVE', 'ARCHIVED'], default: 'ACTIVE' },
+  isActive: { 
+    type: Boolean, 
+    default: true // All new products are active by default
+  }
 }, { timestamps: true });
 
 

@@ -29,3 +29,4 @@ export const useAnalytics = () => {
     refetchInterval: 60000, 
   });
 };
+

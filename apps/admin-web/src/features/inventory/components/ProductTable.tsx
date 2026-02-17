@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
-import { useProducts } from '../api/useProducts'; 
+import { useProducts, useDeleteProduct } from '../api/useProducts'; 
+import type { Product } from '../api/useProducts';
 import { Edit, Trash2, Search, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 
 interface ProductTableProps {
-  onOpenForm: () => void;
+  onOpenForm: (product: Product) => void;
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
   const { data: products, isLoading } = useProducts();
+  const deleteProductMutation = useDeleteProduct();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Safely filter based ONLY on the properties available in your new Product interface
+  
   const filteredProducts = products?.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     p.sku.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you absolutely sure you want to delete ${name}? This action cannot be undone.`)) {
+      try {
+        await deleteProductMutation.mutateAsync(id);
+      } catch (error) {
+        console.error("Failed to delete product:", error);
+        alert("Failed to delete product. Ensure no historical receipts are tied to this item.");
+      }
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
@@ -94,10 +107,17 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
                   </td>
                   <td className="p-4 pr-6">
                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200">
+                      <button 
+                        onClick={() => onOpenForm(product)} // Pass the whole product object
+                        className="p-2 text-gray-400 hover:text-blue-600..."
+                      >
                         <Edit size={16} />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200">
+                      <button 
+                        onClick={() => handleDelete(product._id, product.name)}
+                        disabled={deleteProductMutation.isPending}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200 disabled:opacity-50"
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>

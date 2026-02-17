@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface ICategory extends Document {
+export interface Category extends Document {
   tenantId: mongoose.Types.ObjectId;
   name: string;
   description?: string;
@@ -17,4 +17,4 @@ const CategorySchema = new Schema({
 
 CategorySchema.index({ tenantId: 1, name: 1 }, { unique: true });
 
-export default mongoose.model<ICategory>('Category', CategorySchema);
+export default mongoose.model<Category>('Category', CategorySchema);

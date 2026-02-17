@@ -3,9 +3,11 @@ import { Activity, TrendingUp, Database, Package, Plus, Lock } from 'lucide-reac
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
+import type { Product } from './features/inventory/api/useProducts';
+
 
 function App() {
-  
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   
   const isAuthenticated = !!localStorage.getItem('erp_token');
 
@@ -84,8 +86,18 @@ function App() {
               </button>
             </div>
 
-            <ProductTable onOpenForm={() => setIsModalOpen(true)} />
-            <ProductForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ProductTable onOpenForm={(product: Product) => {
+              setProductToEdit(product);
+              setIsModalOpen(true);
+            }} />
+            <ProductForm 
+              isOpen={isModalOpen} 
+              onClose={() => {
+                setProductToEdit(null); 
+                setIsModalOpen(false);
+              }} 
+              productToEdit={productToEdit} 
+            />
             
           </div>
         )}
