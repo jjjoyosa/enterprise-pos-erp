@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Activity, TrendingUp, Database, Package, Plus, Lock } from 'lucide-react'; 
+import { Activity, TrendingUp, Database, Package, Plus, Lock, Boxes } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
+import { InventoryList } from './features/inventory/components/InventoryList';
 import type { Product } from './features/inventory/api/useProducts';
-
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
-  
   const isAuthenticated = !!localStorage.getItem('erp_token');
 
-  
+  // Authentication Check
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-gray-900 animate-fadeIn p-4">
@@ -26,7 +25,7 @@ function App() {
     );
   }
 
-  
+  // State Management
   const [currentView, setCurrentView] = useState('dashboard'); 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -50,11 +49,19 @@ function App() {
             >
               <TrendingUp size={16} /> Analytics
             </button>
+            
             <button 
               onClick={() => setCurrentView('inventory')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'inventory' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              <Database size={16} /> Inventory
+              <Database size={16} /> Catalog
+            </button>
+
+            <button 
+              onClick={() => setCurrentView('stock')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'stock' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Boxes size={16} /> Stock Control
             </button>
           </nav>
         </div>
@@ -66,16 +73,19 @@ function App() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-8 py-8">
-        {currentView === 'dashboard' ? (
-          <Dashboard />
-        ) : (
+        
+        {/* VIEW 1: Dashboard */}
+        {currentView === 'dashboard' && <Dashboard />}
+
+        {/* VIEW 2: Product Catalog (Master Data) */}
+        {currentView === 'inventory' && (
           <div className="space-y-8 animate-fadeIn">
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <div>
                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <Package className="text-blue-600" /> Inventory Database
+                  <Package className="text-blue-600" /> Product Catalog
                 </h2>
-                <p className="text-gray-500 text-sm mt-1">Manage your catalog, pricing, and master stock levels.</p>
+                <p className="text-gray-500 text-sm mt-1">Manage your catalog, pricing, and master data.</p>
               </div>
               
               <button 
@@ -90,6 +100,7 @@ function App() {
               setProductToEdit(product);
               setIsModalOpen(true);
             }} />
+            
             <ProductForm 
               isOpen={isModalOpen} 
               onClose={() => {
@@ -98,7 +109,13 @@ function App() {
               }} 
               productToEdit={productToEdit} 
             />
-            
+          </div>
+        )}
+
+        {/* VIEW 3: Stock Control (Warehouse Levels) */}
+        {currentView === 'stock' && (
+          <div className="animate-fadeIn">
+            <InventoryList />
           </div>
         )}
         

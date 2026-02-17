@@ -49,3 +49,39 @@ export const recordStockMovement = async (req: Request, res: Response) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+
+
+export const getInventoryLevels = async (req: Request, res: Response) => {
+  try {
+    
+    const inventory = await Inventory.find({ tenantId: req.tenantId })
+      .populate('productId', 'name sku basePrice')
+      .populate('warehouseId', 'name')
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json(inventory);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getStockMovements = async (req: Request, res: Response) => {
+  try {
+    const { productId } = req.query;
+    
+    
+    const query: any = { tenantId: req.tenantId };
+    if (productId) query.productId = productId;
+
+    const movements = await StockMovement.find(query)
+      .populate('productId', 'name sku')
+      .populate('warehouseId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(100); 
+
+    res.status(200).json(movements);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
