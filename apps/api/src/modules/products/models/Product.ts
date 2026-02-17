@@ -12,6 +12,7 @@ export interface IProduct extends Document {
   trackInventory: boolean;
   hasVariants: boolean;
   status: 'ACTIVE' | 'ARCHIVED';
+  stockQuantity: number;
 }
 
 const ProductSchema = new Schema({
@@ -28,8 +29,9 @@ const ProductSchema = new Schema({
   status: { type: String, enum: ['ACTIVE', 'ARCHIVED'], default: 'ACTIVE' },
   isActive: { 
     type: Boolean, 
-    default: true // All new products are active by default
-  }
+    default: true 
+  },
+  stockQuantity: { type: Number, default: 0 },
 }, { timestamps: true });
 
 

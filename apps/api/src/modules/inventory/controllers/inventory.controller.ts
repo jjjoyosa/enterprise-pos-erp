@@ -33,7 +33,6 @@ export const recordStockMovement = async (req: Request, res: Response) => {
     });
 
     
-    
     const updatedInventory = await Inventory.findOneAndUpdate(
       { tenantId: req.tenantId, productId, warehouseId },
       { $inc: { quantity: movement.quantity } },
@@ -46,6 +45,7 @@ export const recordStockMovement = async (req: Request, res: Response) => {
       currentStock: updatedInventory.quantity 
     });
   } catch (error: any) {
+    console.error("Stock movement error:", error);
     res.status(400).json({ error: error.message });
   }
 };
