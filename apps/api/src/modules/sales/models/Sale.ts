@@ -11,6 +11,7 @@ export interface ISale extends Document {
   tenantId: mongoose.Types.ObjectId;
   warehouseId: mongoose.Types.ObjectId;
   cashierId: mongoose.Types.ObjectId;
+  shiftId: mongoose.Types.ObjectId; 
   receiptNumber: string;
   items: ISaleItem[];
   subtotal: number; 
@@ -32,6 +33,7 @@ const SaleSchema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   warehouseId: { type: Schema.Types.ObjectId, ref: 'Warehouse', required: true },
   cashierId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  shiftId: { type: Schema.Types.ObjectId, ref: 'Shift', required: true }, 
   receiptNumber: { type: String, required: true },
   items: [SaleItemSchema],
   subtotal: { type: Number, required: true, min: 0 },
@@ -41,7 +43,6 @@ const SaleSchema = new Schema({
   paymentMethod: { type: String, enum: ['CASH', 'CARD', 'GCASH', 'MAYA'], required: true },
   status: { type: String, enum: ['COMPLETED', 'VOIDED'], default: 'COMPLETED' }
 }, { timestamps: true });
-
 
 SaleSchema.index({ tenantId: 1, receiptNumber: 1 }, { unique: true });
 

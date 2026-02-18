@@ -1,18 +1,22 @@
 import { useEffect, useRef } from 'react';
-import type { Product } from './useProducts';
 import { useCartStore } from '../store/useCartStore';
+import type { POSInventoryItem } from './useInventory'; 
 
-export const useBarcodeScanner = (products: Product[] | undefined) => {
+export const useBarcodeScanner = (inventory: POSInventoryItem[] | undefined) => {
   const addItem = useCartStore((state) => state.addItem);
   const bufferRef = useRef<string>('');
   const lastKeyTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!products) return;
+    if (!inventory) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const currentTime = Date.now();
       
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      const currentTime = Date.now();
       
       
       if (currentTime - lastKeyTimeRef.current > 40) {
@@ -21,17 +25,30 @@ export const useBarcodeScanner = (products: Product[] | undefined) => {
 
       lastKeyTimeRef.current = currentTime;
 
-      
       if (e.key === 'Enter') {
         if (bufferRef.current.length > 2) {
           const scannedCode = bufferRef.current.trim();
           
           
-          const matchedProduct = products.find(p => p.barcode === scannedCode || p.sku === scannedCode);
+          const matchedItem = inventory.find(
+            item => item.productId?.barcode === scannedCode || item.productId?.sku === scannedCode
+          );
           
-          if (matchedProduct) {
-            addItem(matchedProduct);
+          if (matchedItem) {
+            const currentStock = matchedItem.quantity ?? 0;
+
             
+            if (currentStock > 0) {
+              
+              addItem({
+                _id: matchedItem.productId._id,
+                name: matchedItem.productId.name,
+                basePrice: matchedItem.productId.basePrice,
+                stock: currentStock
+              });
+            } else {
+              console.warn(`Scan rejected: ${matchedItem.productId.name} is out of stock.`);
+            }
           } else {
             console.warn(`No product matches barcode/SKU: ${scannedCode}`);
           }
@@ -40,7 +57,6 @@ export const useBarcodeScanner = (products: Product[] | undefined) => {
           e.preventDefault();
         }
       } else {
-        
         if (e.key.length === 1) {
           bufferRef.current += e.key;
         }
@@ -49,5 +65,5 @@ export const useBarcodeScanner = (products: Product[] | undefined) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [products, addItem]);
+  }, [inventory, addItem]);
 };

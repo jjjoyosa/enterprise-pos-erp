@@ -8,12 +8,9 @@ import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
-    
     const { items, paymentMethod, discount = 0 } = req.body;
-    
-    
     const tenantId = req.tenantId;
-    const cashierId = req.userId;
+    const cashierId = req.userId; 
 
     if (!cashierId || !tenantId) {
       return res.status(401).json({ error: 'Unauthorized: Missing identity context' });
@@ -27,12 +24,10 @@ export const processSale = async (req: Request, res: Response) => {
     });
 
     if (!currentShift) {
-      return res.status(403).json({ error: 'Cannot process sale: Register is locked.' });
+      return res.status(403).json({ error: 'Cannot process sale: Register is locked. Please start a shift.' });
     }
 
-    
     const warehouseId = currentShift.warehouseId;
-
     let calculatedSubtotal = 0;
     const processedItems = [];
 
@@ -52,8 +47,9 @@ export const processSale = async (req: Request, res: Response) => {
       });
     }
 
+    
     const finalTotal = calculatedSubtotal - discount;
-    const calculatedTax = finalTotal - (finalTotal / 1.12);
+    const calculatedTax = finalTotal - (finalTotal / 1.12); 
     const receiptNumber = generateReceiptNumber();
 
     
@@ -96,18 +92,11 @@ export const processSale = async (req: Request, res: Response) => {
   }
 };
 
-
-
 export const getSales = async (req: Request, res: Response) => {
   try {
-    
     const tenantId = req.tenantId;
-    
-    if (!tenantId) {
-      return res.status(401).json({ error: 'Unauthorized: Missing tenant context' });
-    }
+    if (!tenantId) return res.status(401).json({ error: 'Unauthorized: Missing tenant context' });
 
-    
     const sales = await Sale.find({ tenantId })
       .sort({ createdAt: -1 }) 
       .limit(50); 
@@ -118,16 +107,14 @@ export const getSales = async (req: Request, res: Response) => {
   }
 };
 
-
-
 export const getDashboardAnalytics = async (req: Request, res: Response) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
     
     const todaysSales = await Sale.find({ 
       tenantId, 
@@ -138,13 +125,21 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const orderCount = todaysSales.length;
 
     
-    
-    const lowStockProducts = await Product.find({ 
+    const lowStockInventory = await Inventory.find({ 
       tenantId, 
-      stock: { $lt: 10 } 
-    }).select('name stock sku').limit(5);
+      quantity: { $lt: 10 } 
+    })
+    .populate('productId', 'name sku')
+    .limit(5);
 
     
+    const lowStockProducts = lowStockInventory.map((inv: any) => ({
+      _id: inv.productId._id,
+      name: inv.productId.name,
+      sku: inv.productId.sku,
+      stock: inv.quantity
+    }));
+
     
     const topProducts = await Sale.aggregate([
       { $match: { tenantId: tenantId } }, 
@@ -158,7 +153,6 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       { $limit: 5 }
     ]);
 
-    
     const populatedTopProducts = await Promise.all(topProducts.map(async (p) => {
       const product = await Product.findById(p._id).select('name');
       return {

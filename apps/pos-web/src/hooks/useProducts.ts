@@ -7,6 +7,7 @@ export interface Product {
   sku: string;
   basePrice: number;
   barcode?: string;
+  stock?: number;
 }
 
 const fetchProducts = async (): Promise<Product[]> => {
