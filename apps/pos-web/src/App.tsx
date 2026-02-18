@@ -75,14 +75,39 @@ function App() {
   };
 
   // Safely filter nested inventory data
+  // Safely aggregate and filter nested inventory data
   const filteredInventory = useMemo(() => {
     if (!inventory) return [];
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return inventory;
-    
-    return inventory.filter(item => {
+
+    // 1. Group duplicates and sum their stock quantities
+    const aggregatedMap = new Map();
+
+    inventory.forEach(item => {
       const product = item.productId;
-      if (!product) return false;
+      if (!product) return;
+
+      if (aggregatedMap.has(product._id)) {
+        // If we already have this product, add the stock to the existing total
+        const existingItem = aggregatedMap.get(product._id);
+        existingItem.quantity += (item.quantity || 0);
+      } else {
+        // First time seeing this product, add it to the map
+        // We spread the object so we don't accidentally mutate the React Query cache
+        aggregatedMap.set(product._id, { 
+          ...item, 
+          quantity: item.quantity || 0 
+        });
+      }
+    });
+
+    const aggregatedInventory = Array.from(aggregatedMap.values());
+
+    // 2. Apply the search filter to the clean, aggregated list
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return aggregatedInventory;
+    
+    return aggregatedInventory.filter(item => {
+      const product = item.productId;
       return (
         product.name.toLowerCase().includes(query) || 
         product.sku.toLowerCase().includes(query) || 

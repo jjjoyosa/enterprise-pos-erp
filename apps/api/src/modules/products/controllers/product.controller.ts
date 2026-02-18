@@ -35,11 +35,13 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
+    const query: any = { tenantId: req.tenantId };
     
-    const products = await Product.find({ 
-      tenantId: req.tenantId, 
-      isActive: { $ne: false } 
-    })
+    if (req.query.includeArchived !== 'true') {
+      query.isActive = { $ne: false };
+    }
+
+    const products = await Product.find(query)
     .populate('categoryId', 'name')
     .sort({ createdAt: -1 });
     

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query'; // 1. Added this import
 import { useProducts, useDeleteProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { Edit, Trash2, Search, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
@@ -8,23 +9,27 @@ interface ProductTableProps {
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
+  const queryClient = useQueryClient(); // 2. Initialize the query client
   const { data: products, isLoading } = useProducts();
   const deleteProductMutation = useDeleteProduct();
   const [searchQuery, setSearchQuery] = useState('');
 
-  
   const filteredProducts = products?.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     p.sku.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you absolutely sure you want to delete ${name}? This action cannot be undone.`)) {
+    if (window.confirm(`Are you absolutely sure you want to archive ${name}? It will be removed from the POS but kept here for records.`)) {
       try {
         await deleteProductMutation.mutateAsync(id);
+        
+        // 3. THE FIX: Force the UI to instantly refetch and update the table!
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        
       } catch (error) {
-        console.error("Failed to delete product:", error);
-        alert("Failed to delete product. Ensure no historical receipts are tied to this item.");
+        console.error("Failed to archive product:", error);
+        alert("Failed to archive product. Please try again.");
       }
     }
   };
@@ -71,59 +76,74 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
                 </td>
               </tr>
             ) : (
-              filteredProducts.map((product) => (
-                <tr key={product._id} className="hover:bg-blue-50/50 transition-colors group">
-                  <td className="p-4 pl-6">
-                    <div className="font-bold text-gray-900">{product.name}</div>
-                    {/* Safely rendering the nested category object */}
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      {typeof product.categoryId === 'object' && product.categoryId !== null 
-                        ? product.categoryId.name 
-                        : 'Uncategorized'}
-                    </div>
-                  </td>
-                  <td className="p-4 font-mono text-sm text-gray-800 font-medium">
-                    {product.sku}
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="font-bold text-blue-600">
-                      ₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      Cost: ₱{product.costPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-                  </td>
-                  <td className="p-4 text-center">
-                    {/* Visual badge for the boolean trackInventory field */}
-                    {product.trackInventory ? (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
-                        <CheckCircle2 size={12} /> Tracked
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
-                        <XCircle size={12} /> Unmonitored
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4 pr-6">
-                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => onOpenForm(product)} // Pass the whole product object
-                        className="p-2 text-gray-400 hover:text-blue-600..."
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(product._id, product.name)}
-                        disabled={deleteProductMutation.isPending}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200 disabled:opacity-50"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              filteredProducts.map((product) => {
+                // Safely check isActive even if it's not strictly in the TS type yet
+                const isArchived = (product as any).isActive === false;
+
+                return (
+                  <tr 
+                    key={product._id} 
+                    className={`transition-colors group ${isArchived ? 'bg-gray-50 opacity-60' : 'hover:bg-blue-50/50'}`}
+                  >
+                    <td className="p-4 pl-6">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${isArchived ? 'text-gray-500' : 'text-gray-900'}`}>
+                          {product.name}
+                        </span>
+                        {isArchived && (
+                          <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-[10px] font-bold uppercase tracking-wider">
+                            Archived
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {typeof product.categoryId === 'object' && product.categoryId !== null 
+                          ? (product.categoryId as any).name 
+                          : 'Uncategorized'}
+                      </div>
+                    </td>
+                    <td className="p-4 font-mono text-sm text-gray-800 font-medium">
+                      {product.sku}
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className={`font-bold ${isArchived ? 'text-gray-500' : 'text-blue-600'}`}>
+                        ₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        Cost: ₱{product.costPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="p-4 text-center">
+                      {(product as any).trackInventory ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                          <CheckCircle2 size={12} /> Tracked
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                          <XCircle size={12} /> Unmonitored
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 pr-6">
+                      <div className={`flex justify-end gap-1 transition-opacity ${isArchived ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <button 
+                          onClick={() => onOpenForm(product)}
+                          className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-white hover:shadow-sm transition-all"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product._id, product.name)}
+                          disabled={deleteProductMutation.isPending || isArchived}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none disabled:hover:border-transparent"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

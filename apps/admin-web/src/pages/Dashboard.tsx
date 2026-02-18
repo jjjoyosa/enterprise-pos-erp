@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAnalytics } from '../hooks/useAnalytics'; // Adjust path if needed
+import { useAnalytics } from '../hooks/useAnalytics'; 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, ShoppingBag, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -87,6 +87,7 @@ export const Dashboard = () => {
             <p className="text-gray-500 text-sm text-center py-8">All inventory levels are healthy.</p>
           ) : (
             <div className="space-y-4">
+              {/* Filter removed: Relies on the backend returning clean data */}
               {data.lowStockProducts.map((product: any) => (
                 <div key={product._id} className="flex justify-between items-center p-3 bg-red-50/50 rounded-lg border border-red-100">
                   <div>

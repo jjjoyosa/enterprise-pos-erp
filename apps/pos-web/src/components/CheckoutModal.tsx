@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useProcessSale } from '../hooks/useSales';
 import { useCartStore } from '../store/useCartStore';
-import { Loader2, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, X, CheckCircle2, Printer } from 'lucide-react';
+import { ReceiptTemplate } from './ReceiptTemplate'; // Added Receipt Import
 
 interface CheckoutModalProps {
   onClose: () => void;
@@ -24,7 +25,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
       return;
     }
 
-    
     const formattedItems = items.map(item => ({
       productId: item.productId,
       quantity: item.quantity
@@ -42,48 +42,58 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
     onClose();
   };
 
-  
-  if (isSuccess) {
-    const isOffline = saleData?.isOffline;
+  // --- THE UPDATED SUCCESS BLOCK ---
+  if (isSuccess && saleData) {
+    const isOffline = saleData.isOffline;
+    const changeDue = paymentMethod === 'CASH' ? Number(amountTendered) - total : 0;
+    
+    // Extract the actual sale object depending on your API's response structure
+    const saleRecord = saleData.sale || saleData;
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center transform transition-all">
-          <CheckCircle2 className={`mx-auto h-16 w-16 mb-4 ${isOffline ? 'text-amber-500' : 'text-green-500'}`} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center flex flex-col items-center my-8 max-h-[90vh]">
           
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <CheckCircle2 className={`h-12 w-12 mb-2 ${isOffline ? 'text-amber-500' : 'text-green-500'}`} />
+          <h2 className="text-xl font-bold text-gray-900 mb-4">
             {isOffline ? 'Saved Offline' : 'Sale Complete!'}
           </h2>
           
-          <p className="text-gray-500 mb-2">Receipt No: <span className="font-mono font-medium text-gray-900">{saleData?.sale?.receiptNumber}</span></p>
-          
           {isOffline && (
-            <p className="text-xs text-amber-600 font-medium bg-amber-50 rounded p-2 mb-4">
+            <p className="text-xs text-amber-600 font-medium bg-amber-50 rounded p-2 mb-4 w-full">
               Internet disconnected. Transaction saved securely to device and will sync later.
             </p>
           )}
-          
-          {paymentMethod === 'CASH' && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100">
-              <div className="text-sm text-gray-600 font-medium">Change Due</div>
-              <div className="text-3xl font-bold text-gray-900">
-                ₱{(Number(amountTendered) - total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </div>
-            </div>
-          )}
 
-          <button 
-            onClick={handleCloseAndClear}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors"
-          >
-            New Order
-          </button>
+          {/* Render the actual Receipt Template inside a scrollable box */}
+          <div className="w-full text-left border border-dashed border-gray-300 p-4 rounded-lg bg-gray-50 overflow-y-auto mb-6 flex-1 min-h-[300px]">
+             <ReceiptTemplate 
+               sale={saleRecord} 
+               change={changeDue} 
+               amountTendered={Number(amountTendered)} 
+             />
+          </div>
+
+          <div className="flex w-full gap-3 mt-auto">
+            <button 
+              onClick={() => window.print()}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors flex justify-center items-center gap-2"
+            >
+              <Printer size={20} /> Print
+            </button>
+            <button 
+              onClick={handleCloseAndClear}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+            >
+              New Order
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  
+  // --- THE CHECKOUT FORM ---
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
@@ -143,7 +153,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
           <div className="mt-8">
             <button 
               type="submit"
-              disabled={isPending}
+              disabled={isPending || total === 0}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center transition-colors"
             >
               {isPending ? <Loader2 className="animate-spin" size={24} /> : 'Complete Transaction'}

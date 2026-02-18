@@ -54,13 +54,24 @@ export const recordStockMovement = async (req: Request, res: Response) => {
 
 export const getInventoryLevels = async (req: Request, res: Response) => {
   try {
-    
-    const inventory = await Inventory.find({ tenantId: req.tenantId })
-      .populate('productId', 'name sku basePrice')
-      .populate('warehouseId', 'name')
-      .sort({ updatedAt: -1 });
+    // 1. Determine if we should allow archived products through
+    const productMatch = req.query.includeArchived === 'true' 
+      ? {} 
+      : { isActive: { $ne: false } };
 
-    res.status(200).json(inventory);
+    // 2. Fetch inventory and apply the match to the populated product
+    const inventory = await Inventory.find({ tenantId: req.tenantId })
+      .populate({
+        path: 'productId',
+        match: productMatch
+      })
+      .populate('warehouseId');
+
+    // 3. Mongoose returns `null` for the product if it was filtered out by the match.
+    // We MUST filter out these nulls so they don't get sent to the POS screen!
+    const validInventory = inventory.filter(item => item.productId !== null);
+
+    res.status(200).json(validInventory);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

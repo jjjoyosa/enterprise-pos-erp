@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
 
-
 export interface InventoryLevel {
   _id: string;
-  productId: { _id: string; name: string; sku: string; basePrice: number };
+  productId: { _id: string; name: string; sku: string; basePrice: number; barcode?: string };
   warehouseId: { _id: string; name: string };
   quantity: number;
 }
@@ -18,12 +17,12 @@ export interface StockMovementPayload {
   notes?: string;
 }
 
-
 export const useInventoryLevels = () => {
   return useQuery<InventoryLevel[]>({
     queryKey: ['inventory-levels'],
     queryFn: async () => {
-      const { data } = await api.get('/inventory');
+      // THE FIX: Added includeArchived=true so Admins can see historical stock
+      const { data } = await api.get('/inventory?includeArchived=true');
       return data;
     },
   });
@@ -38,7 +37,6 @@ export const useStockMovement = () => {
       return data;
     },
     onSuccess: () => {
-      
       queryClient.invalidateQueries({ queryKey: ['inventory-levels'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
     },
