@@ -15,35 +15,50 @@ export const createCategory = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { categoryId, name, description, sku, basePrice, costPrice, trackInventory } = req.body;
-    const finalSKU = sku || generateSKU(name);
-    const product = await Product.create({
-      tenantId: req.tenantId,
-      categoryId,
-      name,
-      description,
-      sku: finalSKU,
-      basePrice,
-      costPrice,
-      trackInventory
-    });
-    res.status(201).json({ message: 'Product created', product });
+    // 🚨 THE SECURITY LOCK: Ensure we know exactly who is creating this
+    const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(403).json({ error: 'FATAL: Cannot create product without a Tenant ID.' });
+    }
+
+    // Forcibly inject the tenantId into the data payload before saving to MongoDB
+    // (This prevents users from forging a different tenantId in the frontend JSON)
+    const productData = { 
+      ...req.body, 
+      tenantId: tenantId 
+    };
+    
+    const newProduct = new Product(productData);
+    await newProduct.save();
+    
+    res.status(201).json(newProduct);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const query: any = { tenantId: req.tenantId };
+    // 🚨 THE SECURITY LOCK: Fallback check for both common middleware injection patterns
+    const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     
+    if (!tenantId) {
+      // Never proceed if tenant is unknown. Hard reject.
+      return res.status(403).json({ error: 'FATAL: Tenant identity missing from request.' });
+    }
+
+    // 1. Base query strictly locked to the authenticated tenant
+    const query: any = { tenantId: tenantId };
+    
+    // 2. Hide archived items UNLESS explicitly requested
     if (req.query.includeArchived !== 'true') {
       query.isActive = { $ne: false };
     }
 
     const products = await Product.find(query)
-    .populate('categoryId', 'name')
-    .sort({ createdAt: -1 });
+      .populate('categoryId', 'name')
+      .sort({ createdAt: -1 });
     
     res.status(200).json(products);
   } catch (error: any) {
