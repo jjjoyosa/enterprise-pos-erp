@@ -17,6 +17,31 @@ export interface StockMovementPayload {
   notes?: string;
 }
 
+// Add this interface
+export interface StockMovementRecord {
+  _id: string;
+  productId: { name: string; sku: string };
+  warehouseId: { name: string };
+  type: 'IN' | 'OUT' | 'ADJUST' | 'SALE';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reference?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+// Add this hook
+export const useStockMovementHistory = () => {
+  return useQuery<StockMovementRecord[]>({
+    queryKey: ['stock-movements'],
+    queryFn: async () => {
+      const { data } = await api.get('/inventory/movements');
+      return data;
+    },
+  });
+};
+
 export const useInventoryLevels = () => {
   return useQuery<InventoryLevel[]>({
     queryKey: ['inventory-levels'],

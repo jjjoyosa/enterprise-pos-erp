@@ -5,6 +5,7 @@ import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
 import { InventoryList } from './features/inventory/components/InventoryList';
 import type { Product } from './features/inventory/api/useProducts';
+import { StockMovementLedger } from './features/inventory/components/StockMovementLedger';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -27,6 +28,7 @@ function App() {
 
   // State Management
   const [currentView, setCurrentView] = useState('dashboard'); 
+  const [stockTab, setStockTab] = useState<'levels' | 'ledger'>('levels');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -112,10 +114,46 @@ function App() {
           </div>
         )}
 
-        {/* VIEW 3: Stock Control (Warehouse Levels) */}
+        {/* VIEW 3: Stock Control (Warehouse Levels & Ledger) */}
         {currentView === 'stock' && (
-          <div className="animate-fadeIn">
-            <InventoryList />
+          <div className="animate-fadeIn space-y-6">
+            
+            <div className="flex justify-between items-end mb-2">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
+                <p className="text-gray-500 text-sm mt-1">Monitor real-time stock levels and track historical movements.</p>
+              </div>
+            </div>
+
+            {/* Sub-Navigation Tabs */}
+            <div className="flex border-b border-gray-200">
+              <button 
+                onClick={() => setStockTab('levels')}
+                className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
+                  stockTab === 'levels' 
+                    ? 'border-blue-600 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Current Stock Levels
+              </button>
+              <button 
+                onClick={() => setStockTab('ledger')}
+                className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
+                  stockTab === 'ledger' 
+                    ? 'border-blue-600 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Movement Ledger
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="pt-2">
+              {stockTab === 'levels' ? <InventoryList /> : <StockMovementLedger />}
+            </div>
+            
           </div>
         )}
         
