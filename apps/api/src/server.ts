@@ -8,6 +8,7 @@ import inventoryRoutes from './modules/inventory/routes/inventory.routes';
 import saleRoutes from './modules/sales/routes/sale.routes';
 import shiftRoutes from './modules/sales/routes/shift.routes';
 import analyticsRoutes from './modules/sales/routes/analytics.routes';
+import employeeRoutes from './modules/auth/routes/employee.routes';
 
 dotenv.config();
 
@@ -40,6 +41,8 @@ app.use('/api/v1/shifts', shiftRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/sales', saleRoutes);
+
+app.use('/api/v1/employees', employeeRoutes);
 
 
 app.listen(PORT, () => {

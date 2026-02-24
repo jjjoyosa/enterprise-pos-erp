@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Activity, TrendingUp, Database, Package, Plus, Lock, Boxes } from 'lucide-react'; 
+import { Activity, TrendingUp, Database, Package, Plus, Lock, Boxes, Users } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
 import { InventoryList } from './features/inventory/components/InventoryList';
 import type { Product } from './features/inventory/api/useProducts';
 import { StockMovementLedger } from './features/inventory/components/StockMovementLedger';
+import { StaffManagement } from './features/staff/components/StaffManagement';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -64,6 +65,13 @@ function App() {
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'stock' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Boxes size={16} /> Stock Control
+            </button>
+
+            <button 
+              onClick={() => setCurrentView('staff')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'staff' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Users size={16} /> Staff
             </button>
           </nav>
         </div>
@@ -156,6 +164,9 @@ function App() {
             
           </div>
         )}
+
+        {/* VIEW 4: Staff & Employee Management */}
+        {currentView === 'staff' && <StaffManagement />}
         
       </main>
     </div>
