@@ -19,7 +19,9 @@ export interface ISale extends Document {
   discount: number;
   total: number; 
   paymentMethod: 'CASH' | 'CARD' | 'GCASH' | 'MAYA';
-  status: 'COMPLETED' | 'VOIDED';
+  // THE FIX: Added refund statuses and notes
+  status: 'COMPLETED' | 'VOIDED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
+  notes?: string;
 }
 
 const SaleItemSchema = new Schema({
@@ -41,7 +43,16 @@ const SaleSchema = new Schema({
   discount: { type: Number, default: 0, min: 0 },
   total: { type: Number, required: true, min: 0 },
   paymentMethod: { type: String, enum: ['CASH', 'CARD', 'GCASH', 'MAYA'], required: true },
-  status: { type: String, enum: ['COMPLETED', 'VOIDED'], default: 'COMPLETED' }
+  // THE FIX: Updated the enum array and added the notes property
+  status: { 
+    type: String, 
+    enum: ['COMPLETED', 'VOIDED', 'REFUNDED', 'PARTIALLY_REFUNDED'], 
+    default: 'COMPLETED' 
+  },
+  notes: { 
+    type: String, 
+    required: false 
+  }
 }, { timestamps: true });
 
 SaleSchema.index({ tenantId: 1, receiptNumber: 1 }, { unique: true });

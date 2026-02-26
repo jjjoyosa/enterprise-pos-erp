@@ -10,8 +10,7 @@ import { StaffManagement } from './features/staff/components/StaffManagement';
 import { Login } from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 
-// THE FIX: Pointed this to your actual pages folder!
-import { SalesLedger } from './pages/SalesLedger';
+import { SalesLedger } from './features/sales/components/SalesLedger';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
