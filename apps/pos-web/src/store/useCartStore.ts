@@ -88,10 +88,14 @@ export const useCartStore = create<CartState>((set) => ({
     return { items: newItems, ...calculateTotals(newItems, state.discount) };
   }),
 
-  setDiscount: (discount) => set((state) => ({
-    discount,
-    ...calculateTotals(state.items, discount)
-  })),
+  setDiscount: (discount) => set((state) => {
+    // Force a full recalculation based on current items + new discount
+    const totals = calculateTotals(state.items, discount);
+    return { 
+      discount, 
+      ...totals 
+    };
+  }),
 
   clearCart: () => set({ items: [], subtotal: 0, tax: 0, discount: 0, total: 0 })
 }));

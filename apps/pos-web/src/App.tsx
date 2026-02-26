@@ -11,10 +11,11 @@ import { logout } from './hooks/useAuth';
 import { useSyncOfflineSales } from './hooks/useSync';
 import { getPendingSales } from './services/db';
 import { SalesHistoryModal } from './components/SalesHistoryModal';
+import { useActiveDiscounts } from './hooks/useDiscounts';
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
-  History 
+  History, Tag 
 } from 'lucide-react';
 
 function App() {
@@ -25,7 +26,11 @@ function App() {
 
   // Use local POS inventory hook
   const { data: inventory = [], isLoading } = useInventory();
-
+const { data: activeDiscounts = [], isLoading: isLoadingDiscounts } = useActiveDiscounts();
+  
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'GCASH' | 'CARD'>('CASH');
+  const [selectedDiscountId, setSelectedDiscountId] = useState<string>('');
+  const [discountError, setDiscountError] = useState<string | null>(null);
   const { 
     items, total, subtotal, tax, discount, 
     addItem, updateQuantity, removeItem, clearCart, setDiscount 
@@ -33,6 +38,7 @@ function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const selectedRule = activeDiscounts.find(d => d._id === selectedDiscountId);
   
   const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
@@ -47,26 +53,47 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
-    const checkPending = async () => {
-      const sales = await getPendingSales();
-      setOfflineCount(sales.length);
-    };
-    checkPending();
+    if (!selectedDiscountId) {
+      setDiscount(0);
+      return;
+    }
 
-    const handleOnline = () => {
-      setIsOnline(true);
-      checkPending(); 
-    };
-    const handleOffline = () => setIsOnline(false);
+    const selectedRule = activeDiscounts.find(d => d._id === selectedDiscountId);
+    if (!selectedRule) return;
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+    // Use a local variable to calculate so we don't rely on potentially stale state
+    const currentSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+
+    if (currentSubtotal < (selectedRule.minPurchaseAmount || 0)) {
+      setDiscount(0);
+      setDiscountError(`Requires min purchase of ₱${selectedRule.minPurchaseAmount}.`);
+      return;
+    }
+
+    let calculatedDiscount = 0;
+    setDiscountError(null);
+
+    if (selectedRule.target === 'SPECIFIC_ITEM' && selectedRule.targetProductId) {
+       const targetItem = items.find(i => i.productId === selectedRule.targetProductId);
+       if (targetItem) {
+          const itemSubtotal = targetItem.unitPrice * targetItem.quantity;
+          calculatedDiscount = selectedRule.type === 'PERCENTAGE'
+             ? itemSubtotal * (selectedRule.value / 100)
+             : Math.min(itemSubtotal, selectedRule.value);
+       } else {
+          setDiscount(0);
+          setDiscountError("Required item not in cart.");
+          return;
+       }
+    } else {
+       calculatedDiscount = selectedRule.type === 'PERCENTAGE'
+          ? currentSubtotal * (selectedRule.value / 100)
+          : selectedRule.value;
+    }
+
+    // Call the updated store action
+    setDiscount(calculatedDiscount);
+  }, [items, selectedDiscountId, activeDiscounts, setDiscount]);
 
   const handleSync = () => {
     syncSales(undefined, {
@@ -295,7 +322,7 @@ function App() {
           )}
         </div>
 
-        <div className="bg-gray-50 p-6 border-t border-gray-200 shrink-0">
+       <div className="bg-gray-50 p-6 border-t border-gray-200 shrink-0">
           
           <div className="space-y-3 mb-6 border-b border-gray-200 pb-4">
             <div className="flex justify-between items-center text-sm">
@@ -303,17 +330,34 @@ function App() {
               <span className="font-semibold text-gray-800">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
             
-            <div className="flex justify-between items-center text-sm group">
-              <span className="text-gray-500">Discount (₱)</span>
-              <input 
-                type="number"
-                min="0"
-                max={subtotal}
-                value={discount === 0 ? '' : discount}
-                onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                placeholder="0.00"
-                className="w-24 text-right border-b border-dashed border-gray-300 outline-none focus:border-blue-500 text-red-500 font-bold bg-transparent transition-colors"
-              />
+            {/* Promotion Selector */}
+            {activeDiscounts.length > 0 && (
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-blue-800 mb-1.5 uppercase">
+                  <Tag size={12} /> Apply Promotion
+                </label>
+                {isLoadingDiscounts ? <div className="text-xs text-gray-500">Loading...</div> : (
+                  <select
+                    value={selectedDiscountId}
+                    onChange={(e) => setSelectedDiscountId(e.target.value)}
+                    className="w-full px-2 py-1.5 bg-white border border-blue-200 rounded text-xs font-medium text-gray-800 outline-none focus:border-blue-500"
+                  >
+                    <option value="">No promotion applied</option>
+                    {activeDiscounts.map(rule => (
+                      <option key={rule._id} value={rule._id}>{rule.name}</option>
+                    ))}
+                  </select>
+                )}
+                {discountError && <div className="text-[10px] font-bold text-red-600 mt-1">{discountError}</div>}
+              </div>
+            )}
+
+            {/* Display Discount */}
+            <div className="flex justify-between items-center text-sm font-bold text-red-600">
+              <span>Discount</span>
+              <span>
+                {discount > 0 ? `-₱${discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '₱0.00'}
+              </span>
             </div>
 
             <div className="flex justify-between items-center text-sm">
@@ -330,7 +374,7 @@ function App() {
           <button 
             onClick={() => setIsCheckoutOpen(true)}
             disabled={items.length === 0}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-sm cursor-pointer"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-sm"
           >
             <CreditCard size={22} /> Process Checkout
           </button>

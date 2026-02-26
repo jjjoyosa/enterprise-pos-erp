@@ -9,6 +9,7 @@ import saleRoutes from './modules/sales/routes/sale.routes';
 import shiftRoutes from './modules/sales/routes/shift.routes';
 import analyticsRoutes from './modules/sales/routes/analytics.routes';
 import employeeRoutes from './modules/auth/routes/employee.routes';
+import discountRoutes from './modules/sales/routes/discount.routes';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/discounts', discountRoutes);
 
 
 app.use('/api/v1/auth', authRoutes);
