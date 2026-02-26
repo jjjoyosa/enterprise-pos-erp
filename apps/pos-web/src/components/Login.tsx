@@ -4,13 +4,13 @@ import { Lock, Loader2, Activity } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [pinCode, setPassword] = useState('');
   const { mutate: login, isPending, isError, error } = useLogin();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    login({ email, password });
+    if (!email || !pinCode) return;
+    login({ email, pinCode });
   };
 
   return (
@@ -62,7 +62,7 @@ export const Login: React.FC = () => {
                 type="password"
                 required
                 className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl focus:ring-0 focus:border-blue-600 outline-none transition-colors font-mono"
-                value={password}
+                value={pinCode}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
               />
@@ -70,7 +70,7 @@ export const Login: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isPending || !email || !password}
+              disabled={isPending || !email || !pinCode}
               className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-sm text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 transition-colors"
             >
               {isPending ? <Loader2 className="animate-spin" size={24} /> : 'Secure Login'}

@@ -31,15 +31,11 @@ export const useOpenShift = () => {
 };
 
 export const useCloseShift = () => {
+
   return useMutation({
     mutationFn: async (endingCash: number) => {
       const { data } = await api.post('/shifts/close', { endingCash });
       return data;
-    },
-    onSuccess: () => {
-      
-      
-      
     },
     onError: (error: any) => {
       console.error("Failed to close shift:", error.response?.data || error.message);

@@ -6,11 +6,13 @@ import Warehouse from '../../inventory/models/Warehouse';
 export const openShift = async (req: Request, res: Response) => {
   try {
     const { startingCash } = req.body;
-    const cashierId = req.userId;
-    const tenantId = req.tenantId;
+    
+    // THE FIX: Safely extract from the user object injected by middleware
+    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
     if (!cashierId || !tenantId) {
-      return res.status(401).json({ error: 'Unauthorized: Missing identity' });
+      return res.status(401).json({ error: 'Unauthorized: Missing identity or tenant context' });
     }
 
     let warehouse = await Warehouse.findOne({ tenantId });
@@ -33,7 +35,6 @@ export const openShift = async (req: Request, res: Response) => {
       warehouseId: warehouse._id, 
       startingCash,
       status: 'OPEN'
-      
     });
 
     res.status(201).json(newShift);
@@ -44,8 +45,9 @@ export const openShift = async (req: Request, res: Response) => {
 
 export const getCurrentShift = async (req: Request, res: Response) => {
   try {
-    const cashierId = req.userId;
-    const tenantId = req.tenantId;
+    // THE FIX
+    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
     if (!cashierId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -64,8 +66,11 @@ export const getCurrentShift = async (req: Request, res: Response) => {
 export const closeShift = async (req: Request, res: Response) => {
   try {
     const { endingCash } = req.body;
-    const cashierId = req.userId;
-    const tenantId = req.tenantId;
+    
+    // THE FIX
+    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
+    
 
     if (!cashierId) return res.status(401).json({ error: 'Unauthorized: Cashier identity missing' });
 
@@ -78,7 +83,6 @@ export const closeShift = async (req: Request, res: Response) => {
     if (!shift) {
       return res.status(404).json({ error: 'No open shift to close.' });
     }
-
     
     const cashSales = await Sale.aggregate([
       { 

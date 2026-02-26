@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, TrendingUp, Database, Package, Plus, Lock, Boxes, Users, ReceiptText } from 'lucide-react'; 
+import { LogOut, Activity, TrendingUp, Database, Package, Plus, Lock, Boxes, Users, ReceiptText } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
@@ -8,6 +8,8 @@ import type { Product } from './features/inventory/api/useProducts';
 import { StockMovementLedger } from './features/inventory/components/StockMovementLedger';
 import { StaffManagement } from './features/staff/components/StaffManagement';
 import { SalesLedger } from './features/sales/components/SalesLedger';
+import { Login } from './pages/Login';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -15,23 +17,14 @@ function App() {
 
   // Authentication Check
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-gray-900 animate-fadeIn p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center max-w-md text-center">
-          <div className="bg-red-100 p-4 rounded-full text-red-600 mb-4">
-            <Lock size={32} />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Admin Access Restricted</h1>
-          <p className="text-gray-500 mb-6 text-sm">You must be authenticated through the POS terminal to access the executive dashboard.</p>
-        </div>
-      </div>
-    );
+    return <Login />;
   }
 
   // State Management
   const [currentView, setCurrentView] = useState('dashboard'); 
   const [stockTab, setStockTab] = useState<'levels' | 'ledger'>('levels');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans animate-fadeIn">
@@ -83,8 +76,15 @@ function App() {
             </button>
           </nav>
         </div>
-
+        <button 
+          onClick={logout} 
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+        >
+          <LogOut size={10} />
+          <span className="font-bold">Secure Logout</span>
+        </button>
         <div className="text-sm font-bold text-blue-800 bg-blue-100 px-4 py-2 rounded-full border border-blue-200">
+          
           Admin Profile
         </div>
       </header>

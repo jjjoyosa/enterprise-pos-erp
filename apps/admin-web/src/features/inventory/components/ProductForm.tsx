@@ -16,7 +16,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const updateProductMutation = useUpdateProduct();
   const { data: categories = [], isLoading, isError } = useCategories();
   
-
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -34,7 +33,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
         basePrice: productToEdit.basePrice?.toString() || '',
         costPrice: productToEdit.costPrice?.toString() || '',
         trackInventory: productToEdit.trackInventory ?? true,
-        
         categoryId: (typeof productToEdit.categoryId === 'object' && productToEdit.categoryId !== null)
           ? productToEdit.categoryId._id 
           : (productToEdit.categoryId || '')
@@ -43,6 +41,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '' });
     }
   }, [productToEdit, isOpen]);
+
   const generateSKU = () => {
     if (!formData.name) {
       alert("Please enter a product name first!");
@@ -55,12 +54,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     const payload = {
       name: formData.name,
       sku: formData.sku,
       basePrice: Number(formData.basePrice),
       costPrice: Number(formData.costPrice),
       trackInventory: formData.trackInventory,
+      // THE FIX: If it's an empty string, send undefined so Mongoose ignores it!
       categoryId: formData.categoryId 
     };
 
@@ -79,6 +80,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
 
   if (!isOpen) return null;
   if (isLoading) return <div>Loading...</div>;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -124,14 +126,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                 <FolderOpen size={16} className="text-gray-400" /> Category
               </label>
               <select
-    value={formData.categoryId}
-    onChange={e => setFormData({...formData, categoryId: e.target.value})}
-  >
-    <option value="">Select a Category...</option>
-    {categories.map((cat) => (
-      <option key={cat._id} value={cat._id}>{cat.name}</option>
-    ))}
-  </select>
+                required
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                value={formData.categoryId}
+                onChange={e => setFormData({...formData, categoryId: e.target.value})}
+              >
+                <option value="">No Category / Uncategorized</option>
+                {categories.map((cat: any) => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
