@@ -1,13 +1,18 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { saveOfflineSale } from '../services/db';
 
-
-
-interface SalePayload {
+// Expanded payload to match your full backend requirements
+export interface SalePayload {
+  shiftId?: string;
   paymentMethod: 'CASH' | 'CARD' | 'GCASH' | 'MAYA';
   discount: number;
-  items: Array<{ productId: string; quantity: number }>;
+  subtotal: number;
+  tax: number;
+  totalAmount: number;
+  amountTendered: number;
+  changeDue: number;
+  items: Array<{ productId: string; name: string; quantity: number; unitPrice: number; subtotal: number }>;
 }
 
 const processSale = async (payload: SalePayload) => {
@@ -20,12 +25,9 @@ const processSale = async (payload: SalePayload) => {
     try {
       console.log('[CHECKOUT] 2b. Awaiting IndexedDB Put...');
       
-      
       await saveOfflineSale({
         receiptNumber: offlineReceiptNumber,
-        paymentMethod: payload.paymentMethod,
-        discount: payload.discount,
-        items: payload.items,
+        ...payload,
         timestamp: new Date().toISOString()
       });
       
@@ -33,7 +35,7 @@ const processSale = async (payload: SalePayload) => {
       
       return { 
         message: 'Saved offline', 
-        sale: { receiptNumber: offlineReceiptNumber },
+        sale: { receiptNumber: offlineReceiptNumber, ...payload },
         isOffline: true 
       };
     } catch (dbError) {
@@ -50,7 +52,7 @@ const processSale = async (payload: SalePayload) => {
   try {
     console.log('[CHECKOUT] 4. Attempting Live API Call...');
     
-    
+    // RESTORED TO /sales to fix the 404 error!
     const { data } = await api.post('/sales', payload);
     
     console.log('[CHECKOUT] 5. Live API Call Successful!');
@@ -68,8 +70,17 @@ const processSale = async (payload: SalePayload) => {
 };
 
 export const useProcessSale = () => {
+  const queryClient = useQueryClient(); // Brought in to refresh cache
+  
   return useMutation({
     mutationFn: processSale,
     networkMode: 'always',
+    onSuccess: (data) => {
+      // THE ERP SYNC: Instantly force the POS to fetch the newly deducted stock!
+      if (!data?.isOffline) {
+        queryClient.invalidateQueries({ queryKey: ['pos-inventory-levels'] });
+        queryClient.invalidateQueries({ queryKey: ['pos-products'] });
+      }
+    }
   });
 };

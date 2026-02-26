@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useProcessSale } from '../hooks/useSales';
 import { useCartStore } from '../store/useCartStore';
+import { useCurrentShift } from '../hooks/useShift'; // Needed for shiftId
 import { Loader2, X, CheckCircle2, Printer } from 'lucide-react';
-import { ReceiptTemplate } from './ReceiptTemplate'; // Added Receipt Import
+import { ReceiptTemplate } from './ReceiptTemplate';
 
 interface CheckoutModalProps {
   onClose: () => void;
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
-  const { items, total, discount, clearCart } = useCartStore();
+  // Added subtotal and tax extracts
+  const { items, total, subtotal, tax, discount, clearCart } = useCartStore();
+  const { data: currentShift } = useCurrentShift(); 
   const { mutate: submitSale, isPending, isSuccess, data: saleData } = useProcessSale();
   
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'GCASH' | 'CARD'>('CASH');
@@ -20,19 +23,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
     e.preventDefault();
     setError(null);
 
-    if (paymentMethod === 'CASH' && Number(amountTendered) < total) {
+    const tenderedNum = Number(amountTendered) || 0;
+
+    if (paymentMethod === 'CASH' && tenderedNum < total) {
       setError('Amount tendered cannot be less than the total.');
       return;
     }
 
+    // Edited to include all fields the backend requires
     const formattedItems = items.map(item => ({
       productId: item.productId,
-      quantity: item.quantity
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.unitPrice * item.quantity
     }));
 
     submitSale({
+      shiftId: currentShift?._id,
       paymentMethod,
       discount,
+      subtotal,
+      tax,
+      totalAmount: total,
+      amountTendered: paymentMethod === 'CASH' ? tenderedNum : total,
+      changeDue: paymentMethod === 'CASH' ? tenderedNum - total : 0,
       items: formattedItems
     });
   };
@@ -47,7 +62,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
     const isOffline = saleData.isOffline;
     const changeDue = paymentMethod === 'CASH' ? Number(amountTendered) - total : 0;
     
-    // Extract the actual sale object depending on your API's response structure
     const saleRecord = saleData.sale || saleData;
 
     return (
@@ -65,7 +79,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
             </p>
           )}
 
-          {/* Render the actual Receipt Template inside a scrollable box */}
           <div className="w-full text-left border border-dashed border-gray-300 p-4 rounded-lg bg-gray-50 overflow-y-auto mb-6 flex-1 min-h-[300px]">
              <ReceiptTemplate 
                sale={saleRecord} 
