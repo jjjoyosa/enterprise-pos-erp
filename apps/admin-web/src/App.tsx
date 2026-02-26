@@ -7,9 +7,11 @@ import { InventoryList } from './features/inventory/components/InventoryList';
 import type { Product } from './features/inventory/api/useProducts';
 import { StockMovementLedger } from './features/inventory/components/StockMovementLedger';
 import { StaffManagement } from './features/staff/components/StaffManagement';
-import { SalesLedger } from './features/sales/components/SalesLedger';
 import { Login } from './pages/Login';
 import { useAuth } from './hooks/useAuth';
+
+// THE FIX: Pointed this to your actual pages folder!
+import { SalesLedger } from './pages/SalesLedger';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -84,7 +86,6 @@ function App() {
           <span className="font-bold">Secure Logout</span>
         </button>
         <div className="text-sm font-bold text-blue-800 bg-blue-100 px-4 py-2 rounded-full border border-blue-200">
-          
           Admin Profile
         </div>
       </header>

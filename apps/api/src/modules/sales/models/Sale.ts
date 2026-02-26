@@ -32,7 +32,7 @@ const SaleItemSchema = new Schema({
 const SaleSchema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   warehouseId: { type: Schema.Types.ObjectId, ref: 'Warehouse', required: true },
-  cashierId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  cashierId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
   shiftId: { type: Schema.Types.ObjectId, ref: 'Shift', required: true }, 
   receiptNumber: { type: String, required: true },
   items: [SaleItemSchema],

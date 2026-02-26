@@ -7,7 +7,6 @@ import Shift from '../models/Shift';
 
 import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
-
 export const processSale = async (req: Request, res: Response) => {
   try {
     const { items, paymentMethod, discount = 0 } = req.body;
@@ -18,7 +17,6 @@ export const processSale = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized: Missing identity context' });
     }
 
-    
     const currentShift = await Shift.findOne({ 
       cashierId, 
       tenantId, 
@@ -33,7 +31,6 @@ export const processSale = async (req: Request, res: Response) => {
     let calculatedSubtotal = 0;
     const processedItems = [];
 
-    
     for (const item of items) {
       const product = await Product.findOne({ _id: item.productId, tenantId });
       if (!product) throw new Error(`Product ${item.productId} not found`);
@@ -49,12 +46,10 @@ export const processSale = async (req: Request, res: Response) => {
       });
     }
 
-    
     const finalTotal = calculatedSubtotal - discount;
     const calculatedTax = finalTotal - (finalTotal / 1.12); 
     const receiptNumber = generateReceiptNumber();
 
-    
     const newSale = await Sale.create({
       tenantId,
       warehouseId, 
@@ -69,7 +64,6 @@ export const processSale = async (req: Request, res: Response) => {
       paymentMethod
     });
 
-    
     for (const item of processedItems) {
       await StockMovement.create({
         tenantId,
@@ -99,13 +93,27 @@ export const getSales = async (req: Request, res: Response) => {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     if (!tenantId) return res.status(403).json({ error: 'FATAL: Tenant identity missing.' });
 
-    // Fetch the latest 100 sales for this tenant, populating the cashier details
+    // THE FIX: Pull firstName, lastName, AND name just to be safe
     const sales = await Sale.find({ tenantId })
-      .populate('cashierId', 'name email') // Pull the name from the Employee model
+      .populate('cashierId', 'name firstName lastName email') 
       .sort({ createdAt: -1 })
-      .limit(100); // Basic pagination limit for performance
+      .limit(100);
 
-    res.status(200).json(sales);
+    // Format the response so the frontend ALWAYS gets a 'name' field
+    const formattedSales = sales.map((sale: any) => {
+      const saleObj = sale.toObject();
+      
+      if (saleObj.cashierId) {
+        // If there's no direct 'name' field, combine firstName and lastName
+        if (!saleObj.cashierId.name && saleObj.cashierId.firstName) {
+          saleObj.cashierId.name = `${saleObj.cashierId.firstName} ${saleObj.cashierId.lastName || ''}`.trim();
+        }
+      }
+      
+      return saleObj;
+    });
+
+    res.status(200).json(formattedSales);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -119,7 +127,6 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    
     const todaysSales = await Sale.find({ 
       tenantId, 
       createdAt: { $gte: today } 
@@ -128,7 +135,6 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const todaysRevenue = todaysSales.reduce((sum, sale) => sum + sale.total, 0);
     const orderCount = todaysSales.length;
 
-    
     const lowStockInventory = await Inventory.find({ 
       tenantId, 
       quantity: { $lt: 10 } 
@@ -136,7 +142,6 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     .populate('productId', 'name sku')
     .limit(5);
 
-    
     const lowStockProducts = lowStockInventory.map((inv: any) => ({
       _id: inv.productId._id,
       name: inv.productId.name,
@@ -144,7 +149,6 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       stock: inv.quantity
     }));
 
-    
     const topProducts = await Sale.aggregate([
       { $match: { tenantId: tenantId } }, 
       { $unwind: "$items" }, 
