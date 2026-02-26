@@ -4,7 +4,9 @@ import Product from '../../products/models/Product';
 import StockMovement from '../../inventory/models/StockMovement';
 import Inventory from '../../inventory/models/Inventory';
 import Shift from '../models/Shift'; 
+
 import { generateReceiptNumber } from '../../../utils/receiptGenerator';
+
 
 export const processSale = async (req: Request, res: Response) => {
   try {
@@ -94,12 +96,14 @@ export const processSale = async (req: Request, res: Response) => {
 
 export const getSales = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) return res.status(401).json({ error: 'Unauthorized: Missing tenant context' });
+    const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: 'FATAL: Tenant identity missing.' });
 
+    // Fetch the latest 100 sales for this tenant, populating the cashier details
     const sales = await Sale.find({ tenantId })
-      .sort({ createdAt: -1 }) 
-      .limit(50); 
+      .populate('cashierId', 'name email') // Pull the name from the Employee model
+      .sort({ createdAt: -1 })
+      .limit(100); // Basic pagination limit for performance
 
     res.status(200).json(sales);
   } catch (error: any) {

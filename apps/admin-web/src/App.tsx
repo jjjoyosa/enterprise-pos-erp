@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, TrendingUp, Database, Package, Plus, Lock, Boxes, Users } from 'lucide-react'; 
+import { Activity, TrendingUp, Database, Package, Plus, Lock, Boxes, Users, ReceiptText } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
@@ -7,6 +7,7 @@ import { InventoryList } from './features/inventory/components/InventoryList';
 import type { Product } from './features/inventory/api/useProducts';
 import { StockMovementLedger } from './features/inventory/components/StockMovementLedger';
 import { StaffManagement } from './features/staff/components/StaffManagement';
+import { SalesLedger } from './features/sales/components/SalesLedger';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -72,6 +73,13 @@ function App() {
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'staff' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Users size={16} /> Staff
+            </button>
+
+            <button 
+              onClick={() => setCurrentView('sales')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'sales' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <ReceiptText size={16} /> Ledger
             </button>
           </nav>
         </div>
@@ -167,6 +175,9 @@ function App() {
 
         {/* VIEW 4: Staff & Employee Management */}
         {currentView === 'staff' && <StaffManagement />}
+
+        {/* VIEW 5: Sales & Transactions Ledger */}
+        {currentView === 'sales' && <SalesLedger />}
         
       </main>
     </div>
