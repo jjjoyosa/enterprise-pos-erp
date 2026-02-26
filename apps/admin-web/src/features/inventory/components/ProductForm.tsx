@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen } from 'lucide-react';
+import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus } from 'lucide-react';
 import { useCreateProduct, useUpdateProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
-import { useCategories } from '../api/useCategories'; 
+import { useCategories, useCreateCategory } from '../api/useCategories'; 
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -14,8 +14,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const isEditMode = !!productToEdit;
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
-  const { data: categories = [], isLoading, isError } = useCategories();
+  const { data: categories = [], isLoading } = useCategories();
   
+  // --- NEW FEATURE: Quick Add Category State ---
+  const createCategoryMutation = useCreateCategory();
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -52,16 +57,28 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     setFormData({ ...formData, sku: `${prefix}-${randomNum}` });
   };
 
+  // --- NEW FEATURE: Handle Quick Save ---
+  const handleSaveNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    const newCat = await createCategoryMutation.mutateAsync({ name: newCategoryName });
+    
+    // Auto-select the newly created category in the dropdown!
+    if (newCat && newCat._id) {
+      setFormData({ ...formData, categoryId: newCat._id });
+    }
+    
+    setIsAddingCategory(false);
+    setNewCategoryName('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     const payload = {
       name: formData.name,
       sku: formData.sku,
       basePrice: Number(formData.basePrice),
       costPrice: Number(formData.costPrice),
       trackInventory: formData.trackInventory,
-      // THE FIX: If it's an empty string, send undefined so Mongoose ignores it!
       categoryId: formData.categoryId 
     };
 
@@ -74,7 +91,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       onClose();
     } catch (error) {
       console.error("Failed to save product:", error);
-      alert("Failed to save product. Check the console for details.");
     }
   };
 
@@ -115,27 +131,69 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                 required
                 type="text" 
                 placeholder="e.g., Acme Mechanical Keyboard"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
               />
             </div>
 
+            {/* --- NEW FEATURE: The Category Block --- */}
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                <FolderOpen size={16} className="text-gray-400" /> Category
-              </label>
-              <select
-                required
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-                value={formData.categoryId}
-                onChange={e => setFormData({...formData, categoryId: e.target.value})}
-              >
-                <option value="">No Category / Uncategorized</option>
-                {categories.map((cat: any) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
-                ))}
-              </select>
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <FolderOpen size={16} className="text-gray-400" /> Category
+                </label>
+                
+                {!isAddingCategory && (
+                  <button 
+                    type="button" 
+                    onClick={() => setIsAddingCategory(true)}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <Plus size={14} /> Quick Add Category
+                  </button>
+                )}
+              </div>
+
+              {isAddingCategory ? (
+                <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100 mt-2">
+                  <input 
+                    type="text" 
+                    placeholder="New Category Name..." 
+                    className="flex-1 px-3 py-1.5 rounded outline-none border border-blue-200 focus:border-blue-400 text-sm"
+                    value={newCategoryName}
+                    onChange={e => setNewCategoryName(e.target.value)}
+                    autoFocus
+                  />
+                  <button 
+                    type="button" 
+                    onClick={handleSaveNewCategory}
+                    disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
+                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-blue-700 disabled:bg-blue-300"
+                  >
+                    {createCategoryMutation.isPending ? 'Saving...' : 'Save'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsAddingCategory(false)}
+                    className="text-gray-500 px-2 hover:text-gray-700"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  required
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white mt-2"
+                  value={formData.categoryId}
+                  onChange={e => setFormData({...formData, categoryId: e.target.value})}
+                >
+                  <option value="" disabled>Select a Category...</option>
+                  {categories.map((cat: any) => (
+                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
