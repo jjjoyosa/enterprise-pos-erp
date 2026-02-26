@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
 import Product from '../models/Product';
-import { generateSKU } from '../../../utils/skuGenerator';
+// NEW IMPORTS: Bringing in your specific inventory models
+import Inventory from '../../inventory/models/Inventory'; 
+import Warehouse from '../../inventory/models/Warehouse'; 
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
@@ -15,15 +17,12 @@ export const createCategory = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    // 🚨 THE SECURITY LOCK: Ensure we know exactly who is creating this
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     
     if (!tenantId) {
       return res.status(403).json({ error: 'FATAL: Cannot create product without a Tenant ID.' });
     }
 
-    // Forcibly inject the tenantId into the data payload before saving to MongoDB
-    // (This prevents users from forging a different tenantId in the frontend JSON)
     const productData = { 
       ...req.body, 
       tenantId: tenantId 
@@ -32,6 +31,28 @@ export const createProduct = async (req: Request, res: Response) => {
     const newProduct = new Product(productData);
     await newProduct.save();
     
+    // -------------------------------------------------------------
+    // THE FIX: AUTO-INITIALIZE INVENTORY SO IT SHOWS UP ON FRONTEND
+    // -------------------------------------------------------------
+    if (newProduct.trackInventory) {
+      // Find the warehouse marked as default for this tenant, or just grab the first one available
+      const defaultWarehouse = await Warehouse.findOne({ tenantId, isDefault: true }) 
+                            || await Warehouse.findOne({ tenantId });
+      
+      if (defaultWarehouse) {
+        // Create the 0-stock record to force it to show up on the Admin Inventory list
+        await Inventory.create({
+          tenantId: tenantId,
+          productId: newProduct._id,
+          warehouseId: defaultWarehouse._id,
+          quantity: 0
+        });
+        console.log(`[ERP] Auto-initialized inventory (0 stock) for new product: ${newProduct.sku}`);
+      } else {
+        console.warn(`[ERP WARNING] Product ${newProduct.sku} created, but NO warehouse found for tenant ${tenantId}.`);
+      }
+    }
+
     res.status(201).json(newProduct);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -40,18 +61,14 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    // 🚨 THE SECURITY LOCK: Fallback check for both common middleware injection patterns
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     
     if (!tenantId) {
-      // Never proceed if tenant is unknown. Hard reject.
       return res.status(403).json({ error: 'FATAL: Tenant identity missing from request.' });
     }
 
-    // 1. Base query strictly locked to the authenticated tenant
     const query: any = { tenantId: tenantId };
     
-    // 2. Hide archived items UNLESS explicitly requested
     if (req.query.includeArchived !== 'true') {
       query.isActive = { $ne: false };
     }
@@ -69,7 +86,6 @@ export const getProducts = async (req: Request, res: Response) => {
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
     
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: id, tenantId: req.tenantId }, 
@@ -109,12 +125,9 @@ export const updateProduct = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    console.log("Querying for tenantId:", req.tenantId); // ADD THIS
     const categories = await Category.find({ tenantId: req.tenantId }).sort({ name: 1 });
-    console.log("Categories found:", categories); // ADD THIS
     res.status(200).json(categories);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
