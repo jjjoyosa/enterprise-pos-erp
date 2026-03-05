@@ -17,7 +17,7 @@ export interface StockMovementPayload {
   notes?: string;
 }
 
-// Add this interface
+
 export interface StockMovementRecord {
   _id: string;
   productId: { name: string; sku: string };
@@ -31,7 +31,7 @@ export interface StockMovementRecord {
   createdAt: string;
 }
 
-// Add this hook
+
 export const useStockMovementHistory = () => {
   return useQuery<StockMovementRecord[]>({
     queryKey: ['stock-movements'],
@@ -46,7 +46,7 @@ export const useInventoryLevels = () => {
   return useQuery<InventoryLevel[]>({
     queryKey: ['inventory-levels'],
     queryFn: async () => {
-      // THE FIX: Added includeArchived=true so Admins can see historical stock
+      
       const { data } = await api.get('/inventory?includeArchived=true');
       return data;
     },

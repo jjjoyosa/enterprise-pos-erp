@@ -1,61 +1,76 @@
 import { Request, Response } from 'express';
 import Sale from '../models/Sale';
-import Product from '../../products/models/Product';
+import Inventory from '../../inventory/models/Inventory';
+import mongoose from 'mongoose';
 
 export const getDashboardMetrics = async (req: Request, res: Response) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todaySales = await Sale.aggregate([
-      { $match: { createdAt: { $gte: today } } },
-      { $group: { _id: null, total: { $sum: "$finalTotal" }, count: { $sum: 1 } } }
-    ]);
+    
+    
+const todaySales = await Sale.aggregate([
+  { $match: { 
+      tenantId: new mongoose.Types.ObjectId(tenantId as string), 
+      createdAt: { $gte: today },
+      status: { $ne: 'REFUNDED' } 
+  }},
+  { $group: { _id: null, total: { $sum: "$total" }, count: { $sum: 1 } } }
+]);
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 6);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-
-    const weeklyRevenue = await Sale.aggregate([
-      { $match: { createdAt: { $gte: sevenDaysAgo } } },
+    
+    const topProducts = await Sale.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId as string),
+        status: {$ne: 'REFUNDED'}
+       } },
+      { $unwind: "$items" },
+      { $group: { _id: "$items.productId", totalSold: { $sum: "$items.quantity" } } },
       {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          total: { $sum: "$finalTotal" }
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productInfo"
         }
       },
-      { $sort: { "_id": 1 } }
+      
+      { $unwind: { path: "$productInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          name: { $ifNull: ["$productInfo.name", "Unknown Product"] },
+          totalSold: 1
+        }
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 5 }
     ]);
 
-    // 1. Fetch raw items safely (Added tenantId security back in)
-    const rawLowStockItems = await Product.find({ 
-      tenantId: req.tenantId,
-      $or: [
-        { stockQuantity: { $lt: 15 } },
-        { currentStock: { $lt: 15 } }
-      ]
-    });
+    
+    
+const lowStockInventory = await Inventory.find({ 
+  tenantId, 
+  quantity: { $lt: 15 } 
+})
+.populate('productId', 'name sku')
+.limit(5);
 
-    // 2. THE ULTIMATE SCRUBBER: Filter them out using pure JavaScript
-    const formattedLowStock = rawLowStockItems
-      // Scrub out anything that is archived or inactive
-      .filter((item: any) => item.isActive !== false && item.status !== 'ARCHIVED')
-      // Map it exactly to what the frontend JSON expects
-      .map((item: any) => ({
-        _id: item._id,
-        name: item.name,
-        sku: item.sku,
-        stock: item.stockQuantity ?? item.currentStock ?? 0
-      }))
-      // Keep only the top 5
-      .slice(0, 5);
+const formattedLowStock = lowStockInventory.map((inv: any) => ({
+  _id: inv.productId._id,
+  name: inv.productId.name,
+  sku: inv.productId.sku,
+  stock: inv.quantity 
+}));
 
-    // 3. Send the clean JSON payload
     res.status(200).json({
-      todayGross: todaySales.length ? todaySales[0].total : 0,
-      todayCount: todaySales.length ? todaySales[0].count : 0,
-      weeklyRevenue,
-      lowStockProducts: formattedLowStock // Using the exact key your frontend expects
+      todaysRevenue: todaySales.length ? todaySales[0].total : 0,
+      orderCount: todaySales.length ? todaySales[0].count : 0,
+      lowStockProducts: formattedLowStock,
+      topProducts
     });
 
   } catch (error: any) {

@@ -20,7 +20,7 @@ export const getActiveDiscounts = async (req: Request, res: Response) => {
 
     const now = new Date();
     
-    // THE FIX: Wrapped the multiple $or conditions inside an $and array
+    
     const discounts = await DiscountRule.find({
       tenantId,
       isActive: true,

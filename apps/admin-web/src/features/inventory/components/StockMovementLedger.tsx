@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useStockMovementHistory } from '../api/useInventory';
 import { Search, ArrowDownRight, ArrowUpRight, RefreshCw, ShoppingCart } from 'lucide-react';
 
@@ -22,7 +22,7 @@ export const StockMovementLedger = () => {
     }
   };
 
-  const getMovementBadge = (type: string, qty: number) => {
+  const getMovementBadge = (_type: string, qty: number) => {
     const isPositive = qty > 0;
     const color = isPositive ? 'text-green-700 bg-green-50 border-green-200' : 'text-orange-700 bg-orange-50 border-orange-200';
     return (
@@ -96,7 +96,7 @@ export const StockMovementLedger = () => {
                   </td>
                   <td className="p-4 pr-6 text-right">
                     <div className="font-mono text-xs text-gray-600 font-medium">{record.reference || '-'}</div>
-                    {record.notes && <div className="text-xs text-gray-400 mt-1 italic max-w-[200px] truncate ml-auto">{record.notes}</div>}
+                    {record.notes && <div className="text-xs text-gray-400 mt-1 italic max-w-200px truncate ml-auto">{record.notes}</div>}
                   </td>
                 </tr>
               ))

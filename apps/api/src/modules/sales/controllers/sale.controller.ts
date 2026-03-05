@@ -93,13 +93,13 @@ export const getSales = async (req: Request, res: Response) => {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     if (!tenantId) return res.status(403).json({ error: 'FATAL: Tenant identity missing.' });
 
-    // Pull firstName, lastName, AND name just to be safe
+    
     const sales = await Sale.find({ tenantId })
       .populate('cashierId', 'name firstName lastName email') 
       .sort({ createdAt: -1 })
       .limit(100);
 
-    // Format the response so the frontend ALWAYS gets a 'name' field
+    
     const formattedSales = sales.map((sale: any) => {
       const saleObj = sale.toObject();
       
@@ -181,11 +181,11 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
   }
 };
 
-// --- NEW: THE REFUND ENGINE ---
+
 export const processRefund = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { refundReason, itemsToRefund } = req.body; // Array of { productId, quantity }
+    const { refundReason, itemsToRefund } = req.body; 
     const tenantId = req.tenantId;
 
     if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
@@ -196,9 +196,9 @@ export const processRefund = async (req: Request, res: Response) => {
 
     let totalRefundAmount = 0;
 
-    // Loop through the requested items to refund
+    
     for (const refundReq of itemsToRefund) {
-      // Find the item in the original sale receipt
+      
       const saleItem = sale.items.find((i: any) => i.productId.toString() === refundReq.productId);
       
       if (!saleItem) {
@@ -211,26 +211,26 @@ export const processRefund = async (req: Request, res: Response) => {
       const refundItemAmount = saleItem.unitPrice * refundReq.quantity;
       totalRefundAmount += refundItemAmount;
 
-      // 1. Log the Stock Movement back IN
+      
       await StockMovement.create({
         tenantId,
         productId: refundReq.productId,
         warehouseId: sale.warehouseId,
-        type: 'IN', // Stock goes BACK into the warehouse
-        quantity: Math.abs(refundReq.quantity), // Positive number
+        type: 'IN', 
+        quantity: Math.abs(refundReq.quantity), 
         reference: `REFUND-${sale.receiptNumber}`,
         notes: refundReason || 'Customer Return'
       });
 
-      // 2. Add stock back to the actual Inventory count
+      
       await Inventory.findOneAndUpdate(
         { tenantId, productId: refundReq.productId, warehouseId: sale.warehouseId },
-        { $inc: { quantity: Math.abs(refundReq.quantity) } }, // Increment!
+        { $inc: { quantity: Math.abs(refundReq.quantity) } }, 
         { new: true }
       );
     }
 
-    // 3. Update the Sale document status
+    
     const isFullRefund = totalRefundAmount >= sale.total;
     
     sale.status = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';

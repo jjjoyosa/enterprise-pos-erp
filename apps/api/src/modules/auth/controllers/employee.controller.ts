@@ -2,15 +2,15 @@ import { Request, Response } from 'express';
 import Employee from '../models/Employee';
 import { hashPassword } from '../../../utils/hash'; 
 
-// -------------------------------------------------------------
-// GET ALL STAFF
-// -------------------------------------------------------------
+
+
+
 export const getEmployees = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     if (!tenantId) return res.status(403).json({ error: 'FATAL: Tenant identity missing.' });
 
-    // Fetch employees, explicitly hiding the pinCode from the frontend for security
+    
     const employees = await Employee.find({ tenantId, isActive: { $ne: false } })
       .select('-pinCode') 
       .sort({ createdAt: -1 });
@@ -21,9 +21,9 @@ export const getEmployees = async (req: Request, res: Response) => {
   }
 };
 
-// -------------------------------------------------------------
-// CREATE NEW STAFF (Hire Cashier/Manager)
-// -------------------------------------------------------------
+
+
+
 export const createEmployee = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
@@ -59,9 +59,9 @@ export const createEmployee = async (req: Request, res: Response) => {
   }
 };
 
-// -------------------------------------------------------------
-// UPDATE STAFF (Edit Role, Name, or Reset PIN)
-// -------------------------------------------------------------
+
+
+
 export const updateEmployee = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
@@ -75,7 +75,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Employee not found.' });
     }
 
-    // If changing email, ensure it's not taken by someone else
+    
     if (email && email !== employee.email) {
       const existingEmail = await Employee.findOne({ tenantId, email });
       if (existingEmail) return res.status(400).json({ error: 'Email is already in use.' });
@@ -86,7 +86,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
     if (role) employee.role = role;
     if (branchId) employee.branchId = branchId;
 
-    // If the admin provided a new PIN, hash it and update
+    
     if (pinCode) {
       employee.pinCode = await hashPassword(pinCode);
     }
@@ -102,9 +102,9 @@ export const updateEmployee = async (req: Request, res: Response) => {
   }
 };
 
-// -------------------------------------------------------------
-// ARCHIVE STAFF (Soft Delete for Audit Trails)
-// -------------------------------------------------------------
+
+
+
 export const archiveEmployee = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
@@ -112,7 +112,7 @@ export const archiveEmployee = async (req: Request, res: Response) => {
 
     if (!tenantId) return res.status(403).json({ error: 'FATAL: Tenant identity missing.' });
 
-    // We do NOT delete. We just set isActive to false.
+    
     const employee = await Employee.findOneAndUpdate(
       { _id: id, tenantId },
       { isActive: false },

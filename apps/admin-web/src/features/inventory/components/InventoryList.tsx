@@ -2,19 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { useInventoryLevels } from '../api/useInventory';
 import type { InventoryLevel } from '../api/useInventory';
 import { AdjustStockModal } from './AdjustStockModal';
+import { Search, Package, AlertTriangle } from 'lucide-react';
 
 export const InventoryList = () => {
   const { data: inventory = [], isLoading, isError } = useInventoryLevels();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState<InventoryLevel | null>(null);
-  
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Process inventory: Group duplicates and apply search filter
   const processedInventory = useMemo(() => {
     if (!inventory) return [];
-
     const aggregatedMap = new Map();
 
     inventory.forEach((item) => {
@@ -22,15 +19,12 @@ export const InventoryList = () => {
       if (!product) return;
 
       if (aggregatedMap.has(product._id)) {
-        // Sum stock for items in multiple warehouses
         const existingItem = aggregatedMap.get(product._id);
         existingItem.quantity += (item.quantity || 0);
-        
         if (existingItem.warehouseId && item.warehouseId && existingItem.warehouseId._id !== item.warehouseId._id) {
           existingItem.warehouseId.name = "Multiple Warehouses";
         }
       } else {
-        // First time seeing product
         aggregatedMap.set(product._id, { 
           ...item, 
           quantity: item.quantity || 0,
@@ -41,20 +35,13 @@ export const InventoryList = () => {
 
     const aggregatedList = Array.from(aggregatedMap.values());
     const query = searchQuery.toLowerCase().trim();
-    
     if (!query) return aggregatedList;
 
-    return aggregatedList.filter((item) => {
-      const product = item.productId;
-      return (
-        product?.name.toLowerCase().includes(query) || 
-        product?.sku.toLowerCase().includes(query)
-      );
-    });
+    return aggregatedList.filter((item) => 
+      item.productId?.name.toLowerCase().includes(query) || 
+      item.productId?.sku.toLowerCase().includes(query)
+    );
   }, [inventory, searchQuery]);
-
-  if (isLoading) return <div className="p-4">Loading inventory levels...</div>;
-  if (isError) return <div className="p-4 text-red-500">Failed to load inventory.</div>;
 
   const handleAdjustClick = (item: InventoryLevel) => {
     setSelectedInventory(item);
@@ -62,81 +49,81 @@ export const InventoryList = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Inventory Management</h2>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fadeIn">
+      {/* HEADER SECTION */}
+      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Inventory Management</h3>
+          <p className="text-sm text-gray-500 mt-1">Current stock levels and warehouse distribution.</p>
+        </div>
         
-        {/* Search Bar */}
         <div className="relative w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search SKU or Product Name..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 shadow-sm"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 shadow-sm text-sm bg-white"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="bg-white rounded shadow overflow-x-auto">
+      {/* TABLE SECTION */}
+      <div className="overflow-x-auto">
         <table className="min-w-full text-left border-collapse">
           <thead>
-            <tr className="bg-gray-100 border-b">
-              <th className="p-4 font-semibold">Product Name</th>
-              <th className="p-4 font-semibold">SKU</th>
-              <th className="p-4 font-semibold">Warehouse</th>
-              <th className="p-4 font-semibold text-right">Current Stock</th>
-              <th className="p-4 font-semibold text-center">Actions</th>
+            <tr className="bg-white border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400 font-bold">
+              <th className="p-4 pl-6">Product Details</th>
+              <th className="p-4">SKU</th>
+              <th className="p-4">Warehouse</th>
+              <th className="p-4 text-center">Current Stock</th>
+              <th className="p-4 pr-6 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
-            {processedInventory.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="p-4 text-center text-gray-500 py-12">
-                  No matching inventory records found.
-                </td>
-              </tr>
+          <tbody className="divide-y divide-gray-50">
+            {isLoading ? (
+              <tr><td colSpan={5} className="p-12 text-center text-gray-400">Loading inventory...</td></tr>
+            ) : isError ? (
+              <tr><td colSpan={5} className="p-12 text-center text-red-500">Failed to load inventory.</td></tr>
+            ) : processedInventory.length === 0 ? (
+              <tr><td colSpan={5} className="p-12 text-center text-gray-400">No matching records found.</td></tr>
             ) : (
               processedInventory.map((item) => {
-                // Check if the product is soft-deleted
                 const isArchived = (item.productId as any)?.isActive === false;
-
                 return (
-                  <tr 
-                    key={item.productId?._id || item._id} 
-                    className={`border-b transition-colors ${isArchived ? 'bg-gray-50 opacity-60' : 'hover:bg-gray-50'}`}
-                  >
-                    <td className="p-4 font-medium">
-                      <div className="flex items-center gap-2">
-                        <span className={isArchived ? 'text-gray-500' : 'text-gray-900'}>
-                          {item.productId?.name || 'Unknown Product'}
-                        </span>
-                        {/* ARCHIVED BADGE */}
-                        {isArchived && (
-                          <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-[10px] font-bold uppercase tracking-wider">
-                            Archived
-                          </span>
-                        )}
+                  <tr key={item.productId?._id || item._id} className={`transition-colors text-sm ${isArchived ? 'bg-gray-50 opacity-60' : 'hover:bg-blue-50/50'}`}>
+                    <td className="p-4 pl-6">
+                      <div className="flex items-center gap-3">
+                        
+                        <div>
+                          <div className={`font-bold ${isArchived ? 'text-gray-500' : 'text-gray-900'}`}>
+                            {item.productId?.name || 'Unknown Product'}
+                          </div>
+                          {isArchived && <span className="text-[10px] font-bold text-gray-400 uppercase">Archived</span>}
+                        </div>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-500 font-mono">{item.productId?.sku}</td>
-                    <td className="p-4 text-sm text-gray-500">
-                      <span className={item.warehouseId?.name === 'Multiple Warehouses' ? 'bg-gray-200 px-2 py-1 rounded text-xs font-bold' : ''}>
-                        {item.warehouseId?.name || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right font-bold text-lg">
-                      <span className={item.quantity <= 10 ? "text-red-600 bg-red-50 px-2 py-1 rounded-md" : "text-green-600 bg-green-50 px-2 py-1 rounded-md"}>
-                        {item.quantity}
-                      </span>
+                    <td className="p-4 text-gray-600 font-mono font-medium">{item.productId?.sku}</td>
+                    <td className="p-4 text-gray-600">
+                      {item.warehouseId?.name === 'Multiple Warehouses' ? (
+                        <span className="flex items-center gap-1 text-orange-600 font-bold text-xs bg-orange-50 px-2 py-1 rounded">
+                          <AlertTriangle size={12} /> Multi-loc
+                        </span>
+                      ) : item.warehouseId?.name || 'N/A'}
                     </td>
                     <td className="p-4 text-center">
+                      <span className={`px-3 py-1 rounded-md text-xs font-bold border ${item.quantity <= 10 ? "text-red-700 bg-red-50 border-red-100" : "text-green-700 bg-green-50 border-green-100"}`}>
+                        {item.quantity} units
+                      </span>
+                    </td>
+                    <td className="p-4 pr-6 text-center">
                       <button 
                         onClick={() => handleAdjustClick(item)}
                         disabled={isArchived}
-                        className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
                       >
-                        Adjust Stock
+                        Adjust
                       </button>
                     </td>
                   </tr>

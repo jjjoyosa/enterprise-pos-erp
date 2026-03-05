@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createDiscount, getActiveDiscounts } from '../controllers/discount.controller';
-import { requireAuth } from '../../../middleware/auth.middleware'; // Adjust path if needed
+import { requireAuth } from '../../../middleware/auth.middleware'; 
 
 const router = Router();
 

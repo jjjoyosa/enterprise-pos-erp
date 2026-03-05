@@ -29,7 +29,7 @@ export const useCreateStaff = () => {
       return data;
     },
     onSuccess: () => {
-      // Instantly refresh the staff table when a new employee is hired
+      
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
   });

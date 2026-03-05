@@ -7,7 +7,7 @@ export const openShift = async (req: Request, res: Response) => {
   try {
     const { startingCash } = req.body;
     
-    // THE FIX: Safely extract from the user object injected by middleware
+    
     const cashierId = (req as any).user?.id || (req as any).user?.userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
@@ -45,7 +45,7 @@ export const openShift = async (req: Request, res: Response) => {
 
 export const getCurrentShift = async (req: Request, res: Response) => {
   try {
-    // THE FIX
+    
     const cashierId = (req as any).user?.id || (req as any).user?.userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
@@ -67,7 +67,7 @@ export const closeShift = async (req: Request, res: Response) => {
   try {
     const { endingCash } = req.body;
     
-    // THE FIX
+    
     const cashierId = (req as any).user?.id || (req as any).user?.userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
     

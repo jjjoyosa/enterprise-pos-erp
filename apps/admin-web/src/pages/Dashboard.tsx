@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAnalytics } from '../hooks/useAnalytics'; 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, ShoppingBag, AlertCircle, Loader2 } from 'lucide-react';
@@ -8,7 +7,7 @@ export const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 min-h-[600px]">
+      <div className="flex flex-col items-center justify-center h-full text-gray-400 min-h-600px">
         <Loader2 className="animate-spin mb-4" size={32} />
         <p>Loading real-time analytics...</p>
       </div>
@@ -17,7 +16,7 @@ export const Dashboard = () => {
 
   if (isError || !data) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-red-400 min-h-[600px]">
+      <div className="flex flex-col items-center justify-center h-full text-red-400 min-h-600px">
         <AlertCircle className="mb-4" size={32} />
         <p>Failed to load dashboard data. Is the API running?</p>
       </div>
@@ -26,12 +25,12 @@ export const Dashboard = () => {
 
   return (
     <div className="animate-fadeIn">
-      <div className="mb-8">
+      <div className="mb-2">
         <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
         <p className="text-sm text-gray-500">Live operational overview.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="bg-green-100 p-4 rounded-xl text-green-600">
             <TrendingUp size={32} />
@@ -55,10 +54,10 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-900 mb-6">Top Selling Products (Lifetime)</h3>
-          <div className="h-[300px] w-full">
+          <div className="h-70 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.topProducts} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />

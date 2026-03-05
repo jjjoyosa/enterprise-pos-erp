@@ -14,7 +14,6 @@ export interface AnalyticsData {
   topProducts: Array<{
     name: string;
     totalSold: number;
-    revenue: number;
   }>;
 }
 

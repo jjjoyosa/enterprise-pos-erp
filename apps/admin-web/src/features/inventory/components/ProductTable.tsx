@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query'; // 1. Added this import
+import { useQueryClient } from '@tanstack/react-query'; 
 import { useProducts, useDeleteProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { Edit, Trash2, Search, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
@@ -9,7 +9,7 @@ interface ProductTableProps {
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
-  const queryClient = useQueryClient(); // 2. Initialize the query client
+  const queryClient = useQueryClient(); 
   const { data: products, isLoading } = useProducts();
   const deleteProductMutation = useDeleteProduct();
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,7 +24,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
       try {
         await deleteProductMutation.mutateAsync(id);
         
-        // 3. THE FIX: Force the UI to instantly refetch and update the table!
+        
         queryClient.invalidateQueries({ queryKey: ['products'] });
         
       } catch (error) {
@@ -77,7 +77,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
               </tr>
             ) : (
               filteredProducts.map((product) => {
-                // Safely check isActive even if it's not strictly in the TS type yet
+                
                 const isArchived = (product as any).isActive === false;
 
                 return (
@@ -125,21 +125,22 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
                       )}
                     </td>
                     <td className="p-4 pr-6">
-                      <div className={`flex justify-end gap-1 transition-opacity ${isArchived ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <div className={`flex justify-end gap-1 transition-opacity ${isArchived ? 'opacity-30' : 'opacity-100'}`}>
                         <button 
-                          onClick={() => onOpenForm(product)}
+                          onClick={() => onOpenForm(product)} 
                           className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-white hover:shadow-sm transition-all"
                         >
                           <Edit size={16} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(product._id, product.name)}
-                          disabled={deleteProductMutation.isPending || isArchived}
+                          onClick={() => handleDelete(product._id, product.name)} 
+                          disabled={deleteProductMutation.isPending || isArchived} 
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-white hover:shadow-sm rounded-lg transition-all border border-transparent hover:border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none disabled:hover:border-transparent"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
+
                     </td>
                   </tr>
                 );

@@ -4,10 +4,10 @@ export interface IDiscountRule extends Document {
   tenantId: mongoose.Types.ObjectId;
   name: string;
   type: 'PERCENTAGE' | 'FIXED_AMOUNT';
-  value: number; // e.g., 10 for 10%, or 500 for ₱500 off
+  value: number; 
   target: 'ENTIRE_CART' | 'SPECIFIC_ITEM';
-  targetProductId?: mongoose.Types.ObjectId; // Only needed if target is SPECIFIC_ITEM
-  minPurchaseAmount?: number; // E.g., Must spend ₱1000 to use
+  targetProductId?: mongoose.Types.ObjectId; 
+  minPurchaseAmount?: number; 
   isActive: boolean;
   startDate?: Date;
   endDate?: Date;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useProcessSale } from '../hooks/useSales';
 import { useCartStore } from '../store/useCartStore';
-import { useCurrentShift } from '../hooks/useShift'; // Needed for shiftId
+import { useCurrentShift } from '../hooks/useShift'; 
 import { Loader2, X, CheckCircle2, Printer } from 'lucide-react';
 import { ReceiptTemplate } from './ReceiptTemplate';
 
@@ -10,7 +10,7 @@ interface CheckoutModalProps {
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
-  // Added subtotal and tax extracts
+  
   const { items, total, subtotal, tax, discount, clearCart } = useCartStore();
   const { data: currentShift } = useCurrentShift(); 
   const { mutate: submitSale, isPending, isSuccess, data: saleData } = useProcessSale();
@@ -30,7 +30,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
       return;
     }
 
-    // Edited to include all fields the backend requires
+    
     const formattedItems = items.map(item => ({
       productId: item.productId,
       name: item.name,
@@ -57,7 +57,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
     onClose();
   };
 
-  // --- THE UPDATED SUCCESS BLOCK ---
+  
   if (isSuccess && saleData) {
     const isOffline = saleData.isOffline;
     const changeDue = paymentMethod === 'CASH' ? Number(amountTendered) - total : 0;
@@ -79,7 +79,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
             </p>
           )}
 
-          <div className="w-full text-left border border-dashed border-gray-300 p-4 rounded-lg bg-gray-50 overflow-y-auto mb-6 flex-1 min-h-[300px]">
+          <div className="w-full text-left border border-dashed border-gray-300 p-4 rounded-lg bg-gray-50 overflow-y-auto mb-6 flex-1 min-h-300px">
              <ReceiptTemplate 
                sale={saleRecord} 
                change={changeDue} 
@@ -106,7 +106,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
     );
   }
 
-  // --- THE CHECKOUT FORM ---
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">

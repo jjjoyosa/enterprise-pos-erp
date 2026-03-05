@@ -20,9 +20,9 @@ export const usePosProducts = () => {
       const { data } = await api.get('/products');
       return data;
     },
-    // --- KEEP PRICES AGGRESSIVELY UPDATED ---
+    
     staleTime: 0, 
-    refetchInterval: 30000, // Check for price/catalog changes every 30 seconds
+    refetchInterval: 30000, 
     refetchOnWindowFocus: true, 
   });
 };

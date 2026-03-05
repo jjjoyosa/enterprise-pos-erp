@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSalesLedger, useRefundSale } from '../api/useSales';
 import type { SaleRecord } from '../api/useSales';
 import { Search, ReceiptText, Calendar, CreditCard, X, RotateCcw, AlertTriangle } from 'lucide-react';
@@ -10,7 +10,7 @@ export const SalesLedger = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReceipt, setSelectedReceipt] = useState<SaleRecord | null>(null);
   
-  // Refund Flow State
+  
   const [refundSale, setRefundSale] = useState<SaleRecord | null>(null);
   const [refundReason, setRefundReason] = useState('');
   const [refundItems, setRefundItems] = useState<Record<string, number>>({});
@@ -20,13 +20,13 @@ export const SalesLedger = () => {
     s.cashierId?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // --- Refund Handlers ---
+  
   const openRefundModal = (sale: SaleRecord) => {
-    setSelectedReceipt(null); // Close the view modal first
+    setSelectedReceipt(null); 
     setRefundSale(sale);
     setRefundReason('');
     
-    // Initialize quantities to 0
+    
     const initialItems: Record<string, number> = {};
     sale.items.forEach(item => {
       initialItems[item.productId] = 0;
@@ -62,7 +62,7 @@ export const SalesLedger = () => {
       itemsToRefund
     }, {
       onSuccess: () => {
-        setRefundSale(null); // Close modal on success
+        setRefundSale(null); 
       }
     });
   };
@@ -242,7 +242,7 @@ export const SalesLedger = () => {
 
       {/* --- Process Return Modal --- */}
       {refundSale && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-60 p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
             <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-red-50 text-red-700">
               <h3 className="font-bold flex items-center gap-2"><RotateCcw size={18}/> Process Return</h3>

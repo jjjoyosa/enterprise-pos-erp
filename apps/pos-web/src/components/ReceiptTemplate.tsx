@@ -1,6 +1,6 @@
 import React from 'react';
 
-// 1. Updated the Interface to accept the new props
+
 interface ReceiptTemplateProps {
   sale: any;
   change?: number;
@@ -16,8 +16,8 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
   });
 
   return (
-    // Note: I removed the `hidden print:block print:absolute...` classes temporarily 
-    // so it actually shows up visually on the success screen inside the modal!
+    
+    
     <div 
       id="printable-receipt-container" 
       className="font-mono text-sm p-4 text-black bg-white w-full max-w-sm mx-auto shadow-sm"
@@ -42,7 +42,12 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
         </div>
         <div className="flex justify-between mt-1">
           <span>Cashier ID:</span>
-          <span>{sale.cashierId?.slice(-6).toUpperCase() || 'SYS-01'}</span>
+          <span>
+            {sale.cashierId 
+              ? sale.cashierId.toString().slice(-6).toUpperCase() 
+              : 'SYS-01'
+            }
+          </span>
         </div>
       </div>
 

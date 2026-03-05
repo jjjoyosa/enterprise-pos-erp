@@ -17,10 +17,10 @@ export const AdjustStockModal = ({ inventoryItem, onClose }: Props) => {
     notes: ''
   });
 
-  // State to hold validation evaluation
+  
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Strict Form Evaluation Logic
+  
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -28,7 +28,7 @@ export const AdjustStockModal = ({ inventoryItem, onClose }: Props) => {
       newErrors.quantity = "Quantity must be a valid number greater than zero.";
     }
 
-    // Prevent negative stock logic
+    
     if (formData.type === 'OUT' && formData.quantity > inventoryItem.quantity) {
       newErrors.quantity = `Cannot deduct ${formData.quantity}. Only ${inventoryItem.quantity} in stock.`;
     }
@@ -43,14 +43,14 @@ export const AdjustStockModal = ({ inventoryItem, onClose }: Props) => {
 
     setErrors(newErrors);
     
-    // Return true if no errors exist
+    
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return; // Stop submission if evaluation fails
+    if (!validateForm()) return; 
     
     mutation.mutate({
       productId: inventoryItem.productId._id,
@@ -86,7 +86,7 @@ export const AdjustStockModal = ({ inventoryItem, onClose }: Props) => {
                 value={formData.type}
                 onChange={(e) => {
                   setFormData({...formData, type: e.target.value as 'IN' | 'OUT'});
-                  setErrors({...errors, quantity: '', notes: ''}); // Clear specific errors on type change
+                  setErrors({...errors, quantity: '', notes: ''}); 
                 }}
                 className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
@@ -161,8 +161,7 @@ export const AdjustStockModal = ({ inventoryItem, onClose }: Props) => {
             <button 
               type="submit" 
               disabled={mutation.isPending}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium disabled:opacity-50 flex items-center justify-center min-w-[120px]"
-            >
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium disabled:opacity-50 flex items-center justify-center min-w-120px">
               {mutation.isPending ? 'Processing...' : 'Confirm'}
             </button>
           </div>

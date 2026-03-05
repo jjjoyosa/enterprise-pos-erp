@@ -19,7 +19,7 @@ export interface ISale extends Document {
   discount: number;
   total: number; 
   paymentMethod: 'CASH' | 'CARD' | 'GCASH' | 'MAYA';
-  // THE FIX: Added refund statuses and notes
+  
   status: 'COMPLETED' | 'VOIDED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
   notes?: string;
 }
@@ -43,7 +43,7 @@ const SaleSchema = new Schema({
   discount: { type: Number, default: 0, min: 0 },
   total: { type: Number, required: true, min: 0 },
   paymentMethod: { type: String, enum: ['CASH', 'CARD', 'GCASH', 'MAYA'], required: true },
-  // THE FIX: Updated the enum array and added the notes property
+  
   status: { 
     type: String, 
     enum: ['COMPLETED', 'VOIDED', 'REFUNDED', 'PARTIALLY_REFUNDED'], 

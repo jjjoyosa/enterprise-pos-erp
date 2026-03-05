@@ -16,7 +16,7 @@ export interface Product {
 
 
 const fetchProducts = async (): Promise<Product[]> => {
-  // Pass the query parameter so the backend knows to send archived items
+  
   const { data } = await api.get('/products?includeArchived=true');
   return data;
 };

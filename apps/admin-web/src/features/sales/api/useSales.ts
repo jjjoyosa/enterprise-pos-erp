@@ -10,11 +10,11 @@ export interface SaleRecord {
   tax: number;
   discount: number;
   paymentMethod: string;
-  // THE FIX: Added status and notes to match the updated backend
+  
   status: 'COMPLETED' | 'VOIDED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
   notes?: string;
   items: Array<{
-    productId: string; // Needed so we can target specific items for partial refunds
+    productId: string; 
     name: string;
     quantity: number;
     unitPrice: number;
@@ -33,7 +33,7 @@ export const useSalesLedger = () => {
   });
 };
 
-// --- NEW: THE REFUND ENGINE HOOKS ---
+
 
 export interface RefundPayload {
   saleId: string;
@@ -56,9 +56,9 @@ export const useRefundSale = () => {
       return data;
     },
     onSuccess: () => {
-      // Instantly refresh the ledger so the UI shows 'REFUNDED'
+      
       queryClient.invalidateQueries({ queryKey: ['admin-sales-ledger'] });
-      // Instantly refresh the inventory so the manager sees the stock return!
+      
       queryClient.invalidateQueries({ queryKey: ['inventory-levels'] });
       queryClient.invalidateQueries({ queryKey: ['stock-ledger'] });
     },

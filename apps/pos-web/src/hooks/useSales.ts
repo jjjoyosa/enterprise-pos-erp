@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { saveOfflineSale } from '../services/db';
 
-// Expanded payload to match your full backend requirements
+
 export interface SalePayload {
   shiftId?: string;
   paymentMethod: 'CASH' | 'CARD' | 'GCASH' | 'MAYA';
@@ -52,7 +52,7 @@ const processSale = async (payload: SalePayload) => {
   try {
     console.log('[CHECKOUT] 4. Attempting Live API Call...');
     
-    // RESTORED TO /sales to fix the 404 error!
+    
     const { data } = await api.post('/sales', payload);
     
     console.log('[CHECKOUT] 5. Live API Call Successful!');
@@ -70,13 +70,13 @@ const processSale = async (payload: SalePayload) => {
 };
 
 export const useProcessSale = () => {
-  const queryClient = useQueryClient(); // Brought in to refresh cache
+  const queryClient = useQueryClient(); 
   
   return useMutation({
     mutationFn: processSale,
     networkMode: 'always',
     onSuccess: (data) => {
-      // THE ERP SYNC: Instantly force the POS to fetch the newly deducted stock!
+      
       if (!data?.isOffline) {
         queryClient.invalidateQueries({ queryKey: ['pos-inventory-levels'] });
         queryClient.invalidateQueries({ queryKey: ['pos-products'] });

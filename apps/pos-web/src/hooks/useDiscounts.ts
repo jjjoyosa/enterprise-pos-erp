@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../services/api'; // Make sure this points to your POS api instance
+import { api } from '../services/api'; 
 
 export interface DiscountRule {
   _id: string;

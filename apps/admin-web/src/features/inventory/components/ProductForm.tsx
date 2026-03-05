@@ -16,7 +16,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const updateProductMutation = useUpdateProduct();
   const { data: categories = [], isLoading } = useCategories();
   
-  // --- NEW FEATURE: Quick Add Category State ---
+  
   const createCategoryMutation = useCreateCategory();
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -57,12 +57,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     setFormData({ ...formData, sku: `${prefix}-${randomNum}` });
   };
 
-  // --- NEW FEATURE: Handle Quick Save ---
+  
   const handleSaveNewCategory = async () => {
     if (!newCategoryName.trim()) return;
     const newCat = await createCategoryMutation.mutateAsync({ name: newCategoryName });
     
-    // Auto-select the newly created category in the dropdown!
+    
     if (newCat && newCat._id) {
       setFormData({ ...formData, categoryId: newCat._id });
     }

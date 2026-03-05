@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { LogOut, Activity, TrendingUp, Database, Package, Plus, Lock, Boxes, Users, ReceiptText } from 'lucide-react'; 
+import { useState } from 'react';
+import { LogOut, Activity, TrendingUp, Database, Package, Plus, Boxes, Users, ReceiptText, Truck } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
@@ -9,19 +9,19 @@ import { StockMovementLedger } from './features/inventory/components/StockMoveme
 import { StaffManagement } from './features/staff/components/StaffManagement';
 import { Login } from './pages/Login';
 import { useAuth } from './hooks/useAuth';
-
 import { SalesLedger } from './features/sales/components/SalesLedger';
+
+
+import { SupplierManagement } from './pages/SupplierManagement'; 
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const isAuthenticated = !!localStorage.getItem('erp_token');
 
-  // Authentication Check
   if (!isAuthenticated) {
     return <Login />;
   }
 
-  // State Management
   const [currentView, setCurrentView] = useState('dashboard'); 
   const [stockTab, setStockTab] = useState<'levels' | 'ledger'>('levels');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,17 +75,29 @@ function App() {
             >
               <ReceiptText size={16} /> Ledger
             </button>
+
+            {/* ADDED: Suppliers Navigation Button */}
+            <button 
+              onClick={() => setCurrentView('suppliers')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'suppliers' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Truck size={16} /> Suppliers
+            </button>
           </nav>
+          
+          <div className="text-sm font-bold text-blue-800 bg-blue-100 px-4 py-2 rounded-full border border-blue-200">
+            Admin
+          </div>
         </div>
-        <button 
-          onClick={logout} 
-          className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-        >
-          <LogOut size={10} />
-          <span className="font-bold">Secure Logout</span>
-        </button>
-        <div className="text-sm font-bold text-blue-800 bg-blue-100 px-4 py-2 rounded-full border border-blue-200">
-          Admin Profile
+        
+        <div className="flex w-full">
+          <button 
+            onClick={logout} 
+            className="ml-auto flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+          >
+            <LogOut size={10} />
+            <span className="font-bold">Logout</span>
+          </button>
         </div>
       </header>
 
@@ -133,7 +145,6 @@ function App() {
         {/* VIEW 3: Stock Control (Warehouse Levels & Ledger) */}
         {currentView === 'stock' && (
           <div className="animate-fadeIn space-y-6">
-            
             <div className="flex justify-between items-end mb-2">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
@@ -169,7 +180,6 @@ function App() {
             <div className="pt-2">
               {stockTab === 'levels' ? <InventoryList /> : <StockMovementLedger />}
             </div>
-            
           </div>
         )}
 
@@ -178,6 +188,9 @@ function App() {
 
         {/* VIEW 5: Sales & Transactions Ledger */}
         {currentView === 'sales' && <SalesLedger />}
+
+        {/* ADDED: VIEW 6: Supplier Management */}
+        {currentView === 'suppliers' && <SupplierManagement />}
         
       </main>
     </div>

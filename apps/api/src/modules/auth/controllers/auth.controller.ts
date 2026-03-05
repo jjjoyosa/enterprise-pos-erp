@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Tenant from '../../organizations/models/Tenant';
 import Role from '../models/Role';
 import User from '../models/User';
-import Employee from '../models/Employee'; // ADDED: Import the Employee model
+import Employee from '../models/Employee'; 
 import { hashPassword } from '../../../utils/hash';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -65,7 +65,7 @@ export const login = async (req: Request, res: Response) => {
 
     const { email, password, pinCode } = req.body;
     
-    // Grab whichever one the frontend sent
+    
     const secretKey = password || pinCode;
     console.log("Extracted Secret Key:", secretKey);
 
@@ -74,7 +74,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and Password/PIN are required.' });
     }
 
-    // --- ATTEMPT 1: User (Admin) ---
+    
     console.log(`Searching for Super Admin with email: ${email}`);
     const user = await User.findOne({ email, isActive: true });
     
@@ -116,7 +116,7 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // --- ATTEMPT 2: Employee (Staff) ---
+    
     console.log("Admin not found. Searching for Employee...");
     const employee = await Employee.findOne({ email, isActive: true });
     
@@ -131,7 +131,7 @@ export const login = async (req: Request, res: Response) => {
         return res.status(401).json({ error: 'Invalid credentials.' });
       }
 
-      // Generate BOTH tokens
+      
       const token = jwt.sign(
         { id: employee._id, tenantId: employee.tenantId, role: employee.role, branchId: employee.branchId },
         process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
@@ -166,33 +166,28 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// Add this to the bottom of auth.controller.ts
+
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(401).json({ error: 'Refresh token required.' });
 
-    if (!refreshToken) {
-      return res.status(401).json({ error: 'Refresh token is required.' });
-    }
-
-    // Verify the refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'super_secret_enterprise_key_2026') as any;
 
-    // Generate a fresh Access Token (e.g., good for another 12 hours)
-    const newAccessToken = jwt.sign(
-      { 
-        id: decoded.id || decoded.userId, 
-        tenantId: decoded.tenantId, 
-        roleId: decoded.roleId,
-        role: decoded.role,
-        branchId: decoded.branchId 
-      },
-      process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
-      { expiresIn: '12h' }
-    );
+    
+    
+    const payload = {
+      userId: decoded.userId || decoded.id, 
+      id: decoded.userId || decoded.id, 
+      tenantId: decoded.tenantId,
+      role: decoded.role,
+      branchId: decoded.branchId
+    };
+
+    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET || 'super_secret_enterprise_key_2026', { expiresIn: '12h' });
 
     res.status(200).json({ token: newAccessToken });
   } catch (error) {
-    res.status(403).json({ error: 'Invalid or expired refresh token. Please log in again.' });
+    res.status(403).json({ error: 'Session expired. Please log in again.' });
   }
 };

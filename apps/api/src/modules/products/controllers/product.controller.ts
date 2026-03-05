@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
 import Product from '../models/Product';
-// NEW IMPORTS: Bringing in your specific inventory models
+
 import Inventory from '../../inventory/models/Inventory'; 
 import Warehouse from '../../inventory/models/Warehouse'; 
 
@@ -31,16 +31,16 @@ export const createProduct = async (req: Request, res: Response) => {
     const newProduct = new Product(productData);
     await newProduct.save();
     
-    // -------------------------------------------------------------
-    // THE FIX: AUTO-INITIALIZE INVENTORY SO IT SHOWS UP ON FRONTEND
-    // -------------------------------------------------------------
+    
+    
+    
     if (newProduct.trackInventory) {
-      // Find the warehouse marked as default for this tenant, or just grab the first one available
+      
       const defaultWarehouse = await Warehouse.findOne({ tenantId, isDefault: true }) 
                             || await Warehouse.findOne({ tenantId });
       
       if (defaultWarehouse) {
-        // Create the 0-stock record to force it to show up on the Admin Inventory list
+        
         await Inventory.create({
           tenantId: tenantId,
           productId: newProduct._id,

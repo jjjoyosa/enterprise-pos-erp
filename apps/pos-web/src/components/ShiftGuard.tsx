@@ -14,7 +14,7 @@ export const ShiftGuard: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/80 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-gray-900/80 backdrop-blur-md p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-8 text-center animate-fadeIn">
         <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
           <Lock className="text-blue-600" size={32} />
