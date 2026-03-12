@@ -19,7 +19,7 @@ export const PurchaseOrderManagement = () => {
   const handleAddItem = () => setPoItems([...poItems, { productId: '', quantity: 1, unitCost: 0 }]);
   
   const handleRemoveItem = (index: number) => {
-    if (poItems.length === 1) return; // Keep at least one row
+    if (poItems.length === 1) return; 
     const newItems = poItems.filter((_, i) => i !== index);
     setPoItems(newItems);
   };
