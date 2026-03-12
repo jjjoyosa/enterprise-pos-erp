@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogOut, Activity, TrendingUp, Database, Package, Plus, Boxes, Users, ReceiptText, Truck } from 'lucide-react'; 
+import { LogOut, Activity, TrendingUp, Database, Package, Plus, Boxes, Users, ReceiptText, Truck, ClipboardList } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
 import { ProductForm } from './features/inventory/components/ProductForm';
@@ -11,8 +11,9 @@ import { Login } from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 import { SalesLedger } from './features/sales/components/SalesLedger';
 
-
 import { SupplierManagement } from './pages/SupplierManagement'; 
+
+import { PurchaseOrderManagement } from './pages/PurchaseOrderManagement'; 
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
@@ -76,12 +77,19 @@ function App() {
               <ReceiptText size={16} /> Ledger
             </button>
 
-            {/* ADDED: Suppliers Navigation Button */}
             <button 
               onClick={() => setCurrentView('suppliers')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'suppliers' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Truck size={16} /> Suppliers
+            </button>
+
+            {/* ADDED: Purchasing Navigation Button */}
+            <button 
+              onClick={() => setCurrentView('purchasing')}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'purchasing' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <ClipboardList size={16} /> Purchasing
             </button>
           </nav>
           
@@ -189,8 +197,11 @@ function App() {
         {/* VIEW 5: Sales & Transactions Ledger */}
         {currentView === 'sales' && <SalesLedger />}
 
-        {/* ADDED: VIEW 6: Supplier Management */}
+        {/* VIEW 6: Supplier Management */}
         {currentView === 'suppliers' && <SupplierManagement />}
+
+        {/* ADDED: VIEW 7: Purchase Order Management */}
+        {currentView === 'purchasing' && <PurchaseOrderManagement />}
         
       </main>
     </div>

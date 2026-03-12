@@ -11,6 +11,7 @@ import analyticsRoutes from './modules/sales/routes/analytics.routes';
 import employeeRoutes from './modules/auth/routes/employee.routes';
 import discountRoutes from './modules/sales/routes/discount.routes';
 import supplierRoutes from './modules/purchasing/routes/supplier.routes';
+import poRoutes from './modules/purchasing/routes/po.routes';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/discounts', discountRoutes);
 
 app.use('/api/v1/purchasing/suppliers', supplierRoutes);
+app.use('/api/v1/purchasing/orders', poRoutes);
 
 
 app.use('/api/v1/auth', authRoutes);
