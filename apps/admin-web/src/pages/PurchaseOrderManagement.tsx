@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { usePurchaseOrders, useCreatePO, useUpdatePOStatus } from '../hooks/usePurchaseOrders';
+import { 
+  usePurchaseOrders, 
+  useCreatePO, 
+  useUpdatePOStatus,
+  useReceivePO 
+} from '../hooks/usePurchaseOrders';
 import { useSuppliers } from '../hooks/useSuppliers';
 import { useProducts } from '../features/inventory/api/useProducts'; 
-import { ClipboardList, Plus, FileText, CheckCircle, Send, X, Trash2 } from 'lucide-react';
+import { ClipboardList, Plus, FileText, CheckCircle, Send, X, Trash2, PackageCheck } from 'lucide-react'; 
 
 export const PurchaseOrderManagement = () => {
   const { data: pos, isLoading } = usePurchaseOrders();
@@ -11,10 +16,15 @@ export const PurchaseOrderManagement = () => {
   
   const createMutation = useCreatePO();
   const statusMutation = useUpdatePOStatus();
+  const receiveMutation = useReceivePO(); 
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ supplierId: '', notes: '' });
   const [poItems, setPoItems] = useState([{ productId: '', quantity: 1, unitCost: 0 }]);
+
+  
+  const [receivingPo, setReceivingPo] = useState<any>(null); 
+  const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>({});
 
   const handleAddItem = () => setPoItems([...poItems, { productId: '', quantity: 1, unitCost: 0 }]);
   
@@ -101,6 +111,25 @@ export const PurchaseOrderManagement = () => {
                       <Send size={18} />
                     </button>
                   )}
+                  {/* ADDED: Receive button for SENT status */}
+                  {po.status === 'SENT' && (
+                    <button 
+                      onClick={() => {
+                        setReceivingPo(po);
+                        const initialQty: Record<string, number> = {};
+                        
+                        po.items.forEach((item: any) => {
+                          const productId = item.productId._id || item.productId;
+                          initialQty[productId] = item.quantity;
+                        });
+                        setReceivedQuantities(initialQty);
+                      }} 
+                      className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors" 
+                      title="Receive Goods"
+                    >
+                      <PackageCheck size={18} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -136,13 +165,12 @@ export const PurchaseOrderManagement = () => {
                   </button>
                 </div>
                 
-                {/* ADDED: Column Headers for the Line Items */}
                 <div className="flex gap-3 px-3 pb-2 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 mb-3">
                   <div className="flex-1">Product</div>
                   <div className="w-24">Qty</div>
                   <div className="w-32">Unit Cost (₱)</div>
                   <div className="w-24 text-right">Total</div>
-                  <div className="w-8"></div> {/* Spacer for the trash icon */}
+                  <div className="w-8"></div>
                 </div>
                 
                 <div className="space-y-3">
@@ -164,7 +192,6 @@ export const PurchaseOrderManagement = () => {
                         {(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </div>
                       
-                      {/* ADDED: Remove Line Item Button */}
                       <div className="w-8 flex justify-center border-l border-gray-100 pl-2">
                         <button 
                           type="button" 
@@ -189,6 +216,76 @@ export const PurchaseOrderManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADDED: Receive Goods Modal */}
+      {receivingPo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl w-[700px] flex flex-col border border-gray-100">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <PackageCheck className="text-green-600" size={20} /> Receive Goods ({receivingPo.poNumber})
+              </h3>
+              <button onClick={() => setReceivingPo(null)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={20} /></button>
+            </div>
+            
+            <div className="p-6">
+              <p className="text-sm text-gray-500 mb-4">Verify the actual quantities received from the supplier. This will immediately update your active inventory ledger.</p>
+              
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                <div className="flex gap-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2">
+                  <div className="flex-1">Product</div>
+                  <div className="w-24 text-center">Expected</div>
+                  <div className="w-32 text-center">Actual Received</div>
+                </div>
+                
+                {receivingPo.items.map((item: any) => {
+                  const productId = item.productId._id || item.productId;
+                  const productName = item.productId.name || 'Unknown Product';
+                  
+                  return (
+                    <div key={productId} className="flex gap-3 items-center bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+                      <div className="flex-1 text-sm font-bold pl-2">{productName}</div>
+                      <div className="w-24 text-center text-sm text-gray-500">{item.quantity}</div>
+                      <div className="w-32">
+                        <input 
+                          type="number" 
+                          min="0"
+                          value={receivedQuantities[productId] ?? item.quantity} 
+                          onChange={(e) => setReceivedQuantities({
+                            ...receivedQuantities, 
+                            [productId]: Number(e.target.value)
+                          })}
+                          className="w-full border border-gray-200 rounded-lg p-1.5 text-center font-bold text-green-700 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all" 
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50 rounded-b-2xl">
+              <button onClick={() => setReceivingPo(null)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
+              <button 
+                onClick={async () => {
+                  const payload = {
+                    receivedItems: Object.keys(receivedQuantities).map(id => ({
+                      productId: id,
+                      actualQty: receivedQuantities[id]
+                    }))
+                  };
+                  await receiveMutation.mutateAsync({ poId: receivingPo._id, payload });
+                  setReceivingPo(null);
+                }}
+                disabled={receiveMutation.isPending} 
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
+              >
+                {receiveMutation.isPending ? 'Processing...' : 'Confirm Delivery'}
+              </button>
+            </div>
           </div>
         </div>
       )}

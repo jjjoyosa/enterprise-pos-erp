@@ -32,3 +32,18 @@ export const useUpdatePOStatus = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] })
   });
 };
+
+export const useReceivePO = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ poId, payload }: { poId: string, payload: any }) => {
+      const { data } = await api.post(`/purchasing/orders/${poId}/receive`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] });
+      
+      queryClient.invalidateQueries({ queryKey: ['inventory'] }); 
+    }
+  });
+};
