@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useInventory } from './hooks/useInventory';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
@@ -17,6 +17,71 @@ import {
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
   History, Tag 
 } from 'lucide-react';
+
+// ADDED: Mini-component to handle local state for the quantity input
+const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
+  const [inputValue, setInputValue] = useState(item.quantity.toString());
+
+  // Keep input synced if + or - buttons are used
+  useEffect(() => {
+    setInputValue(item.quantity.toString());
+  }, [item.quantity]);
+
+  const handleBlur = () => {
+    const parsed = parseInt(inputValue, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setInputValue('1');
+      updateQuantity(item.productId, 1);
+    } else {
+      setInputValue(parsed.toString());
+      updateQuantity(item.productId, parsed);
+    }
+  };
+
+  return (
+    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100 animate-fadeIn">
+      <div className="flex-1 truncate pr-2">
+        <div className="font-medium truncate text-sm">{item.name}</div>
+        <div className="text-xs text-gray-500 mt-0.5">₱{item.unitPrice.toLocaleString()} each</div>
+      </div>
+      
+      <div className="flex items-center gap-1 bg-white rounded-md border border-gray-200 p-1">
+        <button 
+          onClick={() => updateQuantity(item.productId, item.quantity - 1)} 
+          disabled={item.quantity <= 1}
+          className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-50 transition-colors"
+        >
+          <Minus size={14} />
+        </button>
+        
+        <input 
+          type="number" 
+          min="1"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={handleBlur}
+          onFocus={(e) => e.target.select()}
+          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          className="w-10 text-center font-semibold text-sm border-none bg-transparent focus:ring-2 focus:ring-blue-500 outline-none p-0 rounded-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+
+        <button 
+          onClick={() => updateQuantity(item.productId, item.quantity + 1)} 
+          className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"
+        >
+          <Plus size={14} />
+        </button>
+        
+        <button 
+          onClick={() => removeItem(item.productId)} 
+          className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded ml-1 transition-colors"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('erp_token');
@@ -47,16 +112,12 @@ function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { mutate: syncSales, isPending: isSyncingSales } = useSyncOfflineSales();
 
-  
-  
   const handleDiscountChange = (id: string) => {
     setSelectedDiscountId(id);
   };
 
-  
   useEffect(() => {
     const rule = activeDiscounts.find(d => d._id === selectedDiscountId);
-    
     
     if (!selectedDiscountId || !rule) {
       if (discount !== 0) setDiscount(0);
@@ -66,10 +127,8 @@ function App() {
 
     const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
     
-    
     let calculatedDiscount = 0;
     if (subtotal >= (rule.minPurchaseAmount || 0)) {
-        
         if (rule.type === 'PERCENTAGE') {
             calculatedDiscount = subtotal * (rule.value / 100);
         } else {
@@ -77,8 +136,6 @@ function App() {
         }
     }
 
-    
-    
     if (subtotal < (rule.minPurchaseAmount || 0)) {
       if (discountError !== `Requires min purchase of ₱${rule.minPurchaseAmount}.`) {
          setDiscountError(`Requires min purchase of ₱${rule.minPurchaseAmount}.`);
@@ -195,7 +252,7 @@ function App() {
         </main>
       </div>
 
-      <div className="w-400px bg-white shadow-xl h-full flex flex-col shrink-0 z-20 border-l border-gray-200">
+      <div className="w-[400px] bg-white shadow-xl h-full flex flex-col shrink-0 z-20 border-l border-gray-200">
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2 font-semibold text-lg"><ShoppingBag size={20} /> Current Order</div>
           {items.length > 0 && <button onClick={() => { clearCart(); setSelectedDiscountId(''); }} className="text-red-500 hover:text-red-700 p-2 transition-colors"><Trash2 size={20} /></button>}
@@ -204,16 +261,14 @@ function App() {
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400"><ShoppingBag size={48} className="mb-4 opacity-50 text-gray-300" /><p className="text-sm font-medium">Scan barcodes or select items</p></div>
           ) : (
+            // UPDATED: Using the new CartItemRow component
             items.map((item) => (
-              <div key={item.productId} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100 animate-fadeIn">
-                <div className="flex-1 truncate pr-2"><div className="font-medium truncate text-sm">{item.name}</div><div className="text-xs text-gray-500 mt-0.5">₱{item.unitPrice.toLocaleString()} each</div></div>
-                <div className="flex items-center gap-2 bg-white rounded-md border border-gray-200 p-1">
-                  <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"><Minus size={14} /></button>
-                  <span className="w-5 text-center font-semibold text-sm">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"><Plus size={14} /></button>
-                  <button onClick={() => removeItem(item.productId)} className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded ml-1 transition-colors"><Trash2 size={14} /></button>
-                </div>
-              </div>
+              <CartItemRow 
+                key={item.productId} 
+                item={item} 
+                updateQuantity={updateQuantity} 
+                removeItem={removeItem} 
+              />
             ))
           )}
         </div>

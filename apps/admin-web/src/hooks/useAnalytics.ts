@@ -25,7 +25,8 @@ export const useAnalytics = () => {
       const { data } = await api.get('/sales/analytics');
       return data;
     },
-    refetchInterval: 60000, 
+    refetchInterval: 15000, 
+    refetchOnWindowFocus: true,
   });
 };
 
