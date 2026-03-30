@@ -22,9 +22,9 @@ export const PurchaseOrderManagement = () => {
   const [formData, setFormData] = useState({ supplierId: '', notes: '' });
   const [poItems, setPoItems] = useState([{ productId: '', quantity: 1, unitCost: 0 }]);
 
-  
   const [receivingPo, setReceivingPo] = useState<any>(null); 
-  const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>({});
+  
+  const [receivedQuantities, setReceivedQuantities] = useState<Record<string, { actualQty: number, batchNumber: string, expirationDate: string }>>({});
 
   const handleAddItem = () => setPoItems([...poItems, { productId: '', quantity: 1, unitCost: 0 }]);
   
@@ -36,7 +36,21 @@ export const PurchaseOrderManagement = () => {
   
   const handleItemChange = (index: number, field: string, value: any) => {
     const newItems = [...poItems];
-    newItems[index] = { ...newItems[index], [field]: value };
+    
+    
+    if (field === 'productId') {
+      const selectedProduct = products?.find((p: any) => p._id === value);
+      newItems[index] = { 
+        ...newItems[index], 
+        productId: value,
+        
+        unitCost: selectedProduct?.basePrice || 0 
+      };
+    } else {
+      
+      newItems[index] = { ...newItems[index], [field]: value };
+    }
+    
     setPoItems(newItems);
   };
 
@@ -111,18 +125,22 @@ export const PurchaseOrderManagement = () => {
                       <Send size={18} />
                     </button>
                   )}
-                  {/* ADDED: Receive button for SENT status */}
                   {po.status === 'SENT' && (
                     <button 
                       onClick={() => {
                         setReceivingPo(po);
-                        const initialQty: Record<string, number> = {};
+                        
+                        const initialData: Record<string, any> = {};
                         
                         po.items.forEach((item: any) => {
                           const productId = item.productId._id || item.productId;
-                          initialQty[productId] = item.quantity;
+                          initialData[productId] = { 
+                            actualQty: item.quantity, 
+                            batchNumber: '', 
+                            expirationDate: '' 
+                          };
                         });
-                        setReceivedQuantities(initialQty);
+                        setReceivedQuantities(initialData);
                       }} 
                       className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors" 
                       title="Receive Goods"
@@ -220,10 +238,10 @@ export const PurchaseOrderManagement = () => {
         </div>
       )}
 
-      {/* ADDED: Receive Goods Modal */}
+      {/* Receive Goods Modal */}
       {receivingPo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl w-[700px] flex flex-col border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl w-[900px] flex flex-col border border-gray-100">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <PackageCheck className="text-green-600" size={20} /> Receive Goods ({receivingPo.poNumber})
@@ -232,33 +250,67 @@ export const PurchaseOrderManagement = () => {
             </div>
             
             <div className="p-6">
-              <p className="text-sm text-gray-500 mb-4">Verify the actual quantities received from the supplier. This will immediately update your active inventory ledger.</p>
+              <p className="text-sm text-gray-500 mb-4">Verify quantities and assign batch numbers for tracking.</p>
               
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
-                <div className="flex gap-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2">
+                {/* UPDATED: Added headers for Batch and Expiration */}
+                <div className="flex gap-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 pb-2">
                   <div className="flex-1">Product</div>
-                  <div className="w-24 text-center">Expected</div>
-                  <div className="w-32 text-center">Actual Received</div>
+                  <div className="w-16 text-center">Expected</div>
+                  <div className="w-24 text-center">Actual</div>
+                  <div className="w-32">Batch No. (Opt)</div>
+                  <div className="w-32">Exp. Date (Opt)</div>
                 </div>
                 
                 {receivingPo.items.map((item: any) => {
                   const productId = item.productId._id || item.productId;
                   const productName = item.productId.name || 'Unknown Product';
                   
+                  
+                  const itemData = receivedQuantities[productId] || { actualQty: 0, batchNumber: '', expirationDate: '' };
+                  
                   return (
                     <div key={productId} className="flex gap-3 items-center bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                      <div className="flex-1 text-sm font-bold pl-2">{productName}</div>
-                      <div className="w-24 text-center text-sm text-gray-500">{item.quantity}</div>
-                      <div className="w-32">
+                      <div className="flex-1 text-sm font-bold pl-2 truncate">{productName}</div>
+                      <div className="w-16 text-center text-sm text-gray-500">{item.quantity}</div>
+                      
+                      <div className="w-24">
                         <input 
                           type="number" 
                           min="0"
-                          value={receivedQuantities[productId] ?? item.quantity} 
+                          value={itemData.actualQty} 
                           onChange={(e) => setReceivedQuantities({
                             ...receivedQuantities, 
-                            [productId]: Number(e.target.value)
+                            [productId]: { ...itemData, actualQty: Number(e.target.value) }
                           })}
                           className="w-full border border-gray-200 rounded-lg p-1.5 text-center font-bold text-green-700 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all" 
+                        />
+                      </div>
+                      
+                      {/* NEW: Batch Number Input */}
+                      <div className="w-32">
+                        <input 
+                          type="text" 
+                          placeholder="LOT-XXX"
+                          value={itemData.batchNumber} 
+                          onChange={(e) => setReceivedQuantities({
+                            ...receivedQuantities, 
+                            [productId]: { ...itemData, batchNumber: e.target.value }
+                          })}
+                          className="w-full border border-gray-200 rounded-lg p-1.5 text-sm outline-none focus:border-blue-500 text-gray-700 font-mono placeholder:font-sans" 
+                        />
+                      </div>
+
+                      {/* NEW: Expiration Date Input */}
+                      <div className="w-32">
+                        <input 
+                          type="date"
+                          value={itemData.expirationDate} 
+                          onChange={(e) => setReceivedQuantities({
+                            ...receivedQuantities, 
+                            [productId]: { ...itemData, expirationDate: e.target.value }
+                          })}
+                          className="w-full border border-gray-200 rounded-lg p-1.5 text-sm outline-none focus:border-blue-500 text-gray-700" 
                         />
                       </div>
                     </div>
@@ -271,10 +323,13 @@ export const PurchaseOrderManagement = () => {
               <button onClick={() => setReceivingPo(null)} className="px-5 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
               <button 
                 onClick={async () => {
+                  
                   const payload = {
                     receivedItems: Object.keys(receivedQuantities).map(id => ({
                       productId: id,
-                      actualQty: receivedQuantities[id]
+                      actualQty: receivedQuantities[id].actualQty,
+                      batchNumber: receivedQuantities[id].batchNumber || undefined,
+                      expirationDate: receivedQuantities[id].expirationDate || undefined
                     }))
                   };
                   await receiveMutation.mutateAsync({ poId: receivingPo._id, payload });

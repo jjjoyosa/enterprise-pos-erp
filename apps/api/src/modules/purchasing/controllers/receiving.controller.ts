@@ -2,12 +2,15 @@ import { Request, Response } from 'express';
 import PurchaseOrder from '../models/PurchaseOrder';
 import ReceivingReport from '../models/ReceivingReport';
 import Inventory from '../../inventory/models/Inventory'; 
+import Batch from '../../inventory/models/Batch'; 
 
 export const receivePurchaseOrder = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId;
     const userId = (req as any).userId;
     const { id: poId } = req.params;
+    
+    
     const { receivedItems, notes } = req.body; 
 
     if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
@@ -23,7 +26,9 @@ export const receivePurchaseOrder = async (req: Request, res: Response) => {
         productId: item.productId,
         expectedQty: item.quantity,
         actualQty: received ? received.actualQty : 0,
-        unitCost: item.unitCost
+        unitCost: item.unitCost,
+        batchNumber: received?.batchNumber, 
+        expirationDate: received?.expirationDate 
       };
     });
 
@@ -36,7 +41,7 @@ export const receivePurchaseOrder = async (req: Request, res: Response) => {
       poId: po._id,
       supplierId: po.supplierId,
       rrNumber,
-      items: finalItems,
+      items: finalItems, 
       receivedBy: userId,
       notes
     });
@@ -44,12 +49,27 @@ export const receivePurchaseOrder = async (req: Request, res: Response) => {
     
     for (const item of finalItems) {
       if (item.actualQty > 0) {
+        
         await Inventory.findOneAndUpdate(
           { tenantId, productId: item.productId },
           { $inc: { quantity: item.actualQty } },
           { upsert: true, new: true }
         );
+
         
+        
+        const generatedBatchNo = item.batchNumber || `${rrNumber}-${item.productId.toString().slice(-4).toUpperCase()}`;
+        
+        await Batch.create({
+          tenantId,
+          productId: item.productId,
+          receivingReportId: report._id,
+          batchNumber: generatedBatchNo,
+          expirationDate: item.expirationDate || undefined,
+          originalQuantity: item.actualQty,
+          currentQuantity: item.actualQty,
+          status: 'ACTIVE'
+        });
       }
     }
 
@@ -57,7 +77,7 @@ export const receivePurchaseOrder = async (req: Request, res: Response) => {
     po.status = 'COMPLETED';
     await po.save();
 
-    res.status(201).json({ message: 'Goods received and inventory updated.', report });
+    res.status(201).json({ message: 'Goods received, batches created, and inventory updated.', report });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
