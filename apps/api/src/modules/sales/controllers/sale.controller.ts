@@ -4,14 +4,15 @@ import Product from '../../products/models/Product';
 import StockMovement from '../../inventory/models/StockMovement';
 import Inventory from '../../inventory/models/Inventory';
 import Shift from '../models/Shift'; 
+import Batch from '../../inventory/models/Batch'; // ADDED: Import the Batch model
 
 import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
     const { items, paymentMethod, discount = 0 } = req.body;
-    const tenantId = req.tenantId;
-    const cashierId = req.userId; 
+    const tenantId = (req as any).tenantId; // Type assertion for safety
+    const cashierId = (req as any).userId; 
 
     if (!cashierId || !tenantId) {
       return res.status(401).json({ error: 'Unauthorized: Missing identity context' });
@@ -75,12 +76,42 @@ export const processSale = async (req: Request, res: Response) => {
         notes: 'POS Sale'
       });
 
+      // ADDED: FIFO BATCH DEDUCTION ENGINE
+      let remainingQtyToDeduct = item.quantity;
+      
+      const activeBatches = await Batch.find({
+        tenantId,
+        productId: item.productId,
+        status: 'ACTIVE'
+      }).sort({ expirationDate: 1, createdAt: 1 }); // Oldest expiration first
+
+      for (const batch of activeBatches) {
+        if (remainingQtyToDeduct <= 0) break;
+
+        if (batch.currentQuantity <= remainingQtyToDeduct) {
+          // Drain this batch entirely
+          remainingQtyToDeduct -= batch.currentQuantity;
+          batch.currentQuantity = 0;
+          batch.status = 'DEPLETED';
+        } else {
+          // Deduct partial amount from this batch
+          batch.currentQuantity -= remainingQtyToDeduct;
+          remainingQtyToDeduct = 0;
+        }
+        await batch.save();
+      }
+
       await Inventory.findOneAndUpdate(
         { tenantId, productId: item.productId, warehouseId },
         { $inc: { quantity: -Math.abs(item.quantity) } },
         { new: true, upsert: true }
       );
     }
+
+    // ADDED: Update the Shift totals
+    currentShift.expectedCash += finalTotal;
+    currentShift.totalTransactions += 1;
+    await currentShift.save();
 
     res.status(201).json({ message: 'Sale completed successfully', sale: newSale });
   } catch (error: any) {
@@ -92,13 +123,11 @@ export const getSales = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
     if (!tenantId) return res.status(403).json({ error: 'FATAL: Tenant identity missing.' });
-
     
     const sales = await Sale.find({ tenantId })
       .populate('cashierId', 'name firstName lastName email') 
       .sort({ createdAt: -1 })
       .limit(100);
-
     
     const formattedSales = sales.map((sale: any) => {
       const saleObj = sale.toObject();
@@ -120,7 +149,7 @@ export const getSales = async (req: Request, res: Response) => {
 
 export const getDashboardAnalytics = async (req: Request, res: Response) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = (req as any).tenantId;
     if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
     const today = new Date();
@@ -181,12 +210,11 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
   }
 };
 
-
 export const processRefund = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { refundReason, itemsToRefund } = req.body; 
-    const tenantId = req.tenantId;
+    const tenantId = (req as any).tenantId;
 
     if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -196,9 +224,7 @@ export const processRefund = async (req: Request, res: Response) => {
 
     let totalRefundAmount = 0;
 
-    
     for (const refundReq of itemsToRefund) {
-      
       const saleItem = sale.items.find((i: any) => i.productId.toString() === refundReq.productId);
       
       if (!saleItem) {
@@ -210,7 +236,6 @@ export const processRefund = async (req: Request, res: Response) => {
 
       const refundItemAmount = saleItem.unitPrice * refundReq.quantity;
       totalRefundAmount += refundItemAmount;
-
       
       await StockMovement.create({
         tenantId,
@@ -222,7 +247,6 @@ export const processRefund = async (req: Request, res: Response) => {
         notes: refundReason || 'Customer Return'
       });
 
-      
       await Inventory.findOneAndUpdate(
         { tenantId, productId: refundReq.productId, warehouseId: sale.warehouseId },
         { $inc: { quantity: Math.abs(refundReq.quantity) } }, 
@@ -230,7 +254,6 @@ export const processRefund = async (req: Request, res: Response) => {
       );
     }
 
-    
     const isFullRefund = totalRefundAmount >= sale.total;
     
     sale.status = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
