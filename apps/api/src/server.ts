@@ -12,6 +12,7 @@ import employeeRoutes from './modules/auth/routes/employee.routes';
 import discountRoutes from './modules/sales/routes/discount.routes';
 import supplierRoutes from './modules/purchasing/routes/supplier.routes';
 import poRoutes from './modules/purchasing/routes/po.routes';
+import customerRoutes from './modules/crm/routes/customer.routes';
 
 dotenv.config();
 
@@ -27,28 +28,21 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'enterprise-pos-erp-api' });
 });
 
-app.use('/api/v1/analytics', analyticsRoutes);
-app.use('/api/v1/discounts', discountRoutes);
-
-app.use('/api/v1/purchasing/suppliers', supplierRoutes);
-app.use('/api/v1/purchasing/orders', poRoutes);
-
-
-app.use('/api/v1/auth', authRoutes);
-
 app.use((req, res, next) => {
   console.log(`[API] ${req.method} ${req.url} | Body:`, Object.keys(req.body).length ? req.body : 'No Body');
   next();
 });
 
 app.use('/api/v1/shifts', shiftRoutes);
-
-
-
+app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/discounts', discountRoutes);
+app.use('/api/v1/customers', customerRoutes);
+app.use('/api/v1/purchasing/suppliers', supplierRoutes);
+app.use('/api/v1/purchasing/orders', poRoutes);
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/sales', saleRoutes);
-
 app.use('/api/v1/employees', employeeRoutes);
 
 
