@@ -11,6 +11,7 @@ export interface ISale extends Document {
   tenantId: mongoose.Types.ObjectId;
   warehouseId: mongoose.Types.ObjectId;
   cashierId: mongoose.Types.ObjectId;
+  customerId?: mongoose.Types.ObjectId;
   shiftId: mongoose.Types.ObjectId; 
   receiptNumber: string;
   items: ISaleItem[];
@@ -35,6 +36,7 @@ const SaleSchema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   warehouseId: { type: Schema.Types.ObjectId, ref: 'Warehouse', required: true },
   cashierId: { type: Schema.Types.ObjectId, ref: 'Employee', required: true },
+  customerId: { type: Schema.Types.ObjectId, ref: 'Customer' }, 
   shiftId: { type: Schema.Types.ObjectId, ref: 'Shift', required: true }, 
   receiptNumber: { type: String, required: true },
   items: [SaleItemSchema],

@@ -4,14 +4,16 @@ import Product from '../../products/models/Product';
 import StockMovement from '../../inventory/models/StockMovement';
 import Inventory from '../../inventory/models/Inventory';
 import Shift from '../models/Shift'; 
-import Batch from '../../inventory/models/Batch'; // ADDED: Import the Batch model
+import Batch from '../../inventory/models/Batch'; 
+import Customer from '../../crm/models/Customer';
 
 import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
-    const { items, paymentMethod, discount = 0 } = req.body;
-    const tenantId = (req as any).tenantId; // Type assertion for safety
+    
+    const { items, paymentMethod, discount = 0, customerId } = req.body;
+    const tenantId = (req as any).tenantId; 
     const cashierId = (req as any).userId; 
 
     if (!cashierId || !tenantId) {
@@ -54,7 +56,8 @@ export const processSale = async (req: Request, res: Response) => {
     const newSale = await Sale.create({
       tenantId,
       warehouseId, 
-      cashierId,   
+      cashierId,
+      customerId, 
       shiftId: currentShift._id, 
       receiptNumber,
       items: processedItems,
@@ -76,25 +79,22 @@ export const processSale = async (req: Request, res: Response) => {
         notes: 'POS Sale'
       });
 
-      // ADDED: FIFO BATCH DEDUCTION ENGINE
       let remainingQtyToDeduct = item.quantity;
       
       const activeBatches = await Batch.find({
         tenantId,
         productId: item.productId,
         status: 'ACTIVE'
-      }).sort({ expirationDate: 1, createdAt: 1 }); // Oldest expiration first
+      }).sort({ expirationDate: 1, createdAt: 1 }); 
 
       for (const batch of activeBatches) {
         if (remainingQtyToDeduct <= 0) break;
 
         if (batch.currentQuantity <= remainingQtyToDeduct) {
-          // Drain this batch entirely
           remainingQtyToDeduct -= batch.currentQuantity;
           batch.currentQuantity = 0;
           batch.status = 'DEPLETED';
         } else {
-          // Deduct partial amount from this batch
           batch.currentQuantity -= remainingQtyToDeduct;
           remainingQtyToDeduct = 0;
         }
@@ -108,7 +108,19 @@ export const processSale = async (req: Request, res: Response) => {
       );
     }
 
-    // ADDED: Update the Shift totals
+    
+    if (customerId) {
+      await Customer.findOneAndUpdate(
+        { _id: customerId, tenantId },
+        { 
+          $inc: { 
+            totalVisits: 1, 
+            lifetimeValue: finalTotal 
+          } 
+        }
+      );
+    }
+
     currentShift.expectedCash += finalTotal;
     currentShift.totalTransactions += 1;
     await currentShift.save();
