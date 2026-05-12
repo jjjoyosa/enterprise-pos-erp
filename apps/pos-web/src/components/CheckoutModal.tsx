@@ -7,9 +7,10 @@ import { ReceiptTemplate } from './ReceiptTemplate';
 
 interface CheckoutModalProps {
   onClose: () => void;
+  customerId?: string | null;
 }
 
-export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
+export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose, customerId }) => {
   
   const { items, total, subtotal, tax, discount, clearCart } = useCartStore();
   const { data: currentShift } = useCurrentShift(); 
@@ -43,6 +44,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose }) => {
       shiftId: currentShift?._id,
       paymentMethod,
       discount,
+      customerId,
       subtotal,
       tax,
       totalAmount: total,

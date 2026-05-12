@@ -11,18 +11,19 @@ import { logout } from './hooks/useAuth';
 import { useSyncOfflineSales } from './hooks/useSync';
 import { getPendingSales } from './services/db';
 import { SalesHistoryModal } from './components/SalesHistoryModal';
-import { useActiveDiscounts } from './hooks/useDiscounts';
+import { CustomerSearchModal } from './components/CustomerSearchModal'; 
+import { useActiveDiscounts } from './hooks/useDiscounts'; 
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
   History, Tag 
 } from 'lucide-react';
 
-// ADDED: Mini-component to handle local state for the quantity input
+
 const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
   const [inputValue, setInputValue] = useState(item.quantity.toString());
 
-  // Keep input synced if + or - buttons are used
+  
   useEffect(() => {
     setInputValue(item.quantity.toString());
   }, [item.quantity]);
@@ -115,6 +116,9 @@ function App() {
   const handleDiscountChange = (id: string) => {
     setSelectedDiscountId(id);
   };
+
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   useEffect(() => {
     const rule = activeDiscounts.find(d => d._id === selectedDiscountId);
@@ -261,7 +265,7 @@ function App() {
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400"><ShoppingBag size={48} className="mb-4 opacity-50 text-gray-300" /><p className="text-sm font-medium">Scan barcodes or select items</p></div>
           ) : (
-            // UPDATED: Using the new CartItemRow component
+            
             items.map((item) => (
               <CartItemRow 
                 key={item.productId} 
@@ -275,6 +279,19 @@ function App() {
         <div className="bg-gray-50 p-6 border-t border-gray-200 shrink-0">
           <div className="space-y-3 mb-6 border-b border-gray-200 pb-4">
             <div className="flex justify-between items-center text-sm"><span className="text-gray-500">Subtotal</span><span className="font-semibold text-gray-800">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+            <div className="px-4 pt-4">
+          <button 
+            onClick={() => setIsCustomerModalOpen(true)}
+            className="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 hover:bg-blue-100 transition-colors"
+          >
+            <span className="font-medium">
+              {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : "Assign Customer"}
+            </span>
+            <span className="text-[10px] bg-blue-200 px-2 py-1 rounded">
+              {selectedCustomer ? 'Change' : 'Select'}
+            </span>
+          </button>
+        </div>
             {activeDiscounts.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-blue-800 mb-1.5 uppercase"><Tag size={12} /> Apply Promotion</label>
@@ -296,8 +313,17 @@ function App() {
       </div>
       {!isShiftLoading && !currentShift && <ShiftGuard />}
       {isCloseShiftOpen && <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />}
-      {isCheckoutOpen && <CheckoutModal onClose={() => setIsCheckoutOpen(false)} />}
-      {isHistoryOpen && <SalesHistoryModal onClose={() => setIsHistoryOpen(false)} />}
+{isCheckoutOpen && (
+  <CheckoutModal 
+    onClose={() => setIsCheckoutOpen(false)} 
+    customerId={selectedCustomer?._id} 
+  />
+)}      {isHistoryOpen && <SalesHistoryModal onClose={() => setIsHistoryOpen(false)} />}
+        <CustomerSearchModal 
+        isOpen={isCustomerModalOpen} 
+        onClose={() => setIsCustomerModalOpen(false)} 
+        onSelect={(customer: any) => setSelectedCustomer(customer)} 
+      />
     </div>
   );
 }

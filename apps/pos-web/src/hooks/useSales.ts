@@ -7,6 +7,7 @@ export interface SalePayload {
   shiftId?: string;
   paymentMethod: 'CASH' | 'CARD' | 'GCASH' | 'MAYA';
   discount: number;
+  customerId?: string | null;
   subtotal: number;
   tax: number;
   totalAmount: number;
