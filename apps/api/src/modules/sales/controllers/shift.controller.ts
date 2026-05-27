@@ -2,12 +2,15 @@ import { Request, Response } from 'express';
 import Shift from '../models/Shift';
 import Sale from '../../sales/models/Sale'; 
 import Warehouse from '../../inventory/models/Warehouse';
+import ZReading from '../models/ZReading';
+import { generateZReadingNumber } from '../../../utils/receiptGenerator';
 
 export const openShift = async (req: Request, res: Response) => {
   try {
     const { startingCash } = req.body;
     
-    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    
+    const cashierId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
     if (!cashierId || !tenantId) {
@@ -33,6 +36,7 @@ export const openShift = async (req: Request, res: Response) => {
       cashierId,
       warehouseId: warehouse._id, 
       startingCash,
+      expectedCash: startingCash, 
       status: 'OPEN'
     });
 
@@ -44,10 +48,10 @@ export const openShift = async (req: Request, res: Response) => {
 
 export const getCurrentShift = async (req: Request, res: Response) => {
   try {
-    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    const cashierId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
-    if (!cashierId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!cashierId || !tenantId) return res.status(401).json({ error: 'Unauthorized' });
 
     const shift = await Shift.findOne({ 
       cashierId, 
@@ -65,7 +69,7 @@ export const recordCashMovement = async (req: Request, res: Response) => {
   try {
     const { type, amount, reason } = req.body;
     
-    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    const cashierId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
 
     if (!cashierId || !tenantId) return res.status(401).json({ error: 'Unauthorized' });
@@ -78,14 +82,11 @@ export const recordCashMovement = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No open shift found.' });
     }
 
-    
     const movement = { type, amount, reason, timestamp: new Date() };
-    
     
     if (!shift.cashMovements) shift.cashMovements = [];
     shift.cashMovements.push(movement);
 
-    
     if (type === 'PAY_IN') {
       shift.expectedCash += amount;
     } else if (type === 'PAY_OUT') {
@@ -104,10 +105,10 @@ export const closeShift = async (req: Request, res: Response) => {
   try {
     const { endingCash } = req.body;
     
-    const cashierId = (req as any).user?.id || (req as any).user?.userId;
+    const cashierId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
     
-    if (!cashierId) return res.status(401).json({ error: 'Unauthorized: Cashier identity missing' });
+    if (!cashierId || !tenantId) return res.status(401).json({ error: 'Unauthorized: Context profile missing' });
 
     const shift = await Shift.findOne({ cashierId, tenantId, status: 'OPEN' });
 
@@ -116,17 +117,28 @@ export const closeShift = async (req: Request, res: Response) => {
     }
     
     
-    
-    
-    const cashSalesDocs = await Sale.find({ 
+    const shiftSales = await Sale.find({ 
       tenantId, 
       shiftId: shift._id, 
-      paymentMethod: 'CASH',
       status: { $ne: 'REFUNDED' } 
     });
 
     
-    const cashSalesTotal = cashSalesDocs.reduce((sum, sale) => sum + sale.total, 0);
+    let cashSalesTotal = 0;
+    let grossSales = 0;
+    let netSales = 0;
+    let totalTax = 0;
+    let totalDiscounts = 0;
+
+    shiftSales.forEach(sale => {
+      grossSales += sale.subtotal;
+      netSales += sale.total;
+      totalTax += sale.tax;
+      totalDiscounts += sale.discount;
+      if (sale.paymentMethod === 'CASH') {
+        cashSalesTotal += sale.total;
+      }
+    });
     
     
     let totalPayIns = 0;
@@ -143,6 +155,28 @@ export const closeShift = async (req: Request, res: Response) => {
     const expectedCash = (shift.startingCash + cashSalesTotal + totalPayIns) - totalPayOuts;
     const variance = endingCash - expectedCash;
 
+    
+    const zReceiptNumber = await generateZReadingNumber(tenantId);
+
+    
+    await ZReading.create({
+      tenantId,
+      shiftId: shift._id,
+      cashierId,
+      zReceiptNumber,
+      grossSales,
+      netSales,
+      totalTax,
+      totalDiscounts,
+      startingCash: shift.startingCash,
+      totalPayIns,
+      totalPayOuts,
+      expectedCash,
+      actualEndingCash: endingCash,
+      variance
+    });
+
+    
     shift.status = 'CLOSED';
     shift.endTime = new Date();
     shift.expectedCash = expectedCash; 
@@ -155,8 +189,9 @@ export const closeShift = async (req: Request, res: Response) => {
     
     await shift.save();
 
+    
     res.status(200).json({ 
-      message: 'Shift closed', 
+      message: 'Shift successfully closed and audited Z-Reading archived.', 
       shift,
       summary: {
         startingCash: shift.startingCash,
@@ -165,7 +200,11 @@ export const closeShift = async (req: Request, res: Response) => {
         totalPayOuts,
         expectedCash,
         actualEndingCash: endingCash,
-        variance 
+        variance,
+        grossSales,
+        netSales,
+        totalTax,
+        totalDiscounts
       }
     });
   } catch (error: any) {
