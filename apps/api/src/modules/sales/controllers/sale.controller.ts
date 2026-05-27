@@ -11,7 +11,6 @@ import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
-    
     const { items, paymentMethod, discount = 0, customerId } = req.body;
     const tenantId = (req as any).tenantId; 
     const cashierId = (req as any).userId; 
@@ -107,15 +106,19 @@ export const processSale = async (req: Request, res: Response) => {
         { new: true, upsert: true }
       );
     }
-
     
+    // LOYALTY ENGINE CALCULATION ADDED HERE
+    let pointsEarned = 0;
     if (customerId) {
+      pointsEarned = Math.floor(finalTotal / 100); // 1 point per ₱100 spent
+
       await Customer.findOneAndUpdate(
         { _id: customerId, tenantId },
         { 
           $inc: { 
             totalVisits: 1, 
-            lifetimeValue: finalTotal 
+            lifetimeValue: finalTotal,
+            loyaltyPoints: pointsEarned // Increments the points
           } 
         }
       );
@@ -125,12 +128,17 @@ export const processSale = async (req: Request, res: Response) => {
     currentShift.totalTransactions += 1;
     await currentShift.save();
 
-    res.status(201).json({ message: 'Sale completed successfully', sale: newSale });
+    res.status(201).json({ 
+      message: 'Sale completed successfully', 
+      sale: newSale,
+      pointsEarned // Return points to frontend
+    });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 };
 
+// ... keep getSales, getDashboardAnalytics, and processRefund as they were ...
 export const getSales = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;

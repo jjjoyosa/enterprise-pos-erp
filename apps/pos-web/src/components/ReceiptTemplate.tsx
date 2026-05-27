@@ -1,6 +1,5 @@
 import React from 'react';
 
-
 interface ReceiptTemplateProps {
   sale: any;
   change?: number;
@@ -16,8 +15,6 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
   });
 
   return (
-    
-    
     <div 
       id="printable-receipt-container" 
       className="font-mono text-sm p-4 text-black bg-white w-full max-w-sm mx-auto shadow-sm"
@@ -114,6 +111,21 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
       </div>
 
       <div className="border-b-2 border-dashed border-gray-400 my-4"></div>
+
+      {/* LOYALTY REWARDS SECTION ADDED HERE */}
+      {sale.customerId && (
+        <>
+          <div className="text-center text-xs mb-4">
+            <div className="font-bold text-gray-800 uppercase tracking-widest">
+              Loyalty Rewards
+            </div>
+            <div className="text-gray-600 mt-1 font-medium">
+              Points Earned This Visit: <span className="font-bold text-black">{Math.floor(sale.total / 100)}</span>
+            </div>
+          </div>
+          <div className="border-b-2 border-dashed border-gray-400 my-4"></div>
+        </>
+      )}
 
       {/* Footer */}
       <div className="text-center text-xs">
