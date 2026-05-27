@@ -7,7 +7,7 @@ import Shift from '../models/Shift';
 import Batch from '../../inventory/models/Batch'; 
 import Customer from '../../crm/models/Customer';
 
-import { generateReceiptNumber } from '../../../utils/receiptGenerator';
+import { getNextOfficialReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
@@ -52,8 +52,7 @@ export const processSale = async (req: Request, res: Response) => {
     
     const finalTotal = calculatedSubtotal - discount - pointsRedeemed;
     const calculatedTax = finalTotal - (finalTotal / 1.12); 
-    const receiptNumber = generateReceiptNumber();
-
+    const receiptNumber = await getNextOfficialReceiptNumber(tenantId);
     const newSale = await Sale.create({
       tenantId,
       warehouseId, 

@@ -1,6 +1,16 @@
-export const generateReceiptNumber = (): string => {
-  const date = new Date();
-  const dateString = date.toISOString().slice(0, 10).replace(/-/g, ''); 
-  const randomStr = Math.floor(1000 + Math.random() * 9000); 
-  return `SI-${dateString}-${randomStr}`;
+import Sequence from '../modules/sales/models/Sequence'; 
+
+export const getNextOfficialReceiptNumber = async (tenantId: string): Promise<string> => {
+  
+  
+  const sequenceDoc = await Sequence.findOneAndUpdate(
+    { tenantId, type: 'SI_NUMBER' }, 
+    { $inc: { sequence_value: 1 } },
+    { new: true, upsert: true } 
+  );
+
+  
+  const paddedSequence = sequenceDoc.sequence_value.toString().padStart(9, '0');
+  
+  return `SI-${paddedSequence}`;
 };
