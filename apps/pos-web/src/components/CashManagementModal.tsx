@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ArrowDownToLine, ArrowUpFromLine, Wallet, AlertCircle } from 'lucide-react';
+import { X, ArrowDownToLine, ArrowUpFromLine, Wallet, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -15,49 +15,56 @@ export const CashManagementModal: React.FC<CashManagementModalProps> = ({ isOpen
   const [amount, setAmount] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLocalError(null);
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!amount || Number(amount) <= 0) {
-      setLocalError('Please enter a valid amount.');
+      showToast('error', 'Please enter a valid amount.');
       return;
     }
     if (!reason.trim()) {
-      setLocalError('Please provide a reason for this cash movement.');
+      showToast('error', 'Please provide a reason for this cash movement.');
       return;
     }
 
-    
-    const payload = {
-      type,
-      amount: Number(amount),
-      reason
-    };
+    setIsSubmitting(true);
+    setToast(null);
 
-    
-    setAmount('');
-    setReason('');
-    setType('PAY_IN');
-    onClose();
-
-    
-    api.post('/shifts/cash-movement', payload)
-      .then(() => {
-        
-        queryClient.invalidateQueries({ queryKey: ['current-shift'] });
-        
-        
-        alert(`${payload.type === 'PAY_IN' ? 'Pay In' : 'Pay Out'} of ₱${payload.amount} recorded successfully.`);
-      })
-      .catch((error: any) => {
-        console.error(error);
-        alert(error.response?.data?.error || "Failed to record cash movement. Please try again.");
+    try {
+      await api.post('/shifts/cash-movement', {
+        type,
+        amount: Number(amount),
+        reason
       });
+
+      showToast('success', `${type === 'PAY_IN' ? 'Pay In' : 'Pay Out'} of ₱${amount} recorded successfully.`);
+      
+      
+      queryClient.invalidateQueries({ queryKey: ['current-shift'] });
+
+      
+      setTimeout(() => {
+        setAmount('');
+        setReason('');
+        setType('PAY_IN');
+        onClose();
+      }, 1500);
+
+    } catch (error: any) {
+      console.error(error);
+      showToast('error', error.response?.data?.error || "Failed to record cash movement");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -80,11 +87,11 @@ export const CashManagementModal: React.FC<CashManagementModalProps> = ({ isOpen
           </button>
         </div>
 
-        {/* Local Validation Error */}
-        {localError && (
-          <div className="p-4 text-sm font-bold flex items-center gap-2 bg-red-50 text-red-700 border-b border-red-100">
-            <AlertCircle size={18} />
-            {localError}
+        {/* In-Modal Notification Toast */}
+        {toast && (
+          <div className={`p-4 text-sm font-bold flex items-center gap-2 ${toast.type === 'success' ? 'bg-green-50 text-green-700 border-b border-green-100' : 'bg-red-50 text-red-700 border-b border-red-100'}`}>
+            {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            {toast.message}
           </div>
         )}
 
@@ -147,11 +154,13 @@ export const CashManagementModal: React.FC<CashManagementModalProps> = ({ isOpen
           {/* Submit Button */}
           <button
             type="submit"
+            disabled={isSubmitting}
             className={`w-full py-3.5 rounded-xl text-white font-bold flex items-center justify-center gap-2 transition-colors ${
               type === 'PAY_IN' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-            }`}
+            } disabled:opacity-50`}
           >
-            Confirm {type === 'PAY_IN' ? 'Pay In' : 'Pay Out'}
+            {isSubmitting && <Loader2 size={18} className="animate-spin" />}
+            {isSubmitting ? 'Recording...' : `Confirm ${type === 'PAY_IN' ? 'Pay In' : 'Pay Out'}`}
           </button>
 
         </form>

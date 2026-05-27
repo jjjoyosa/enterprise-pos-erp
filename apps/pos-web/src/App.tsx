@@ -13,10 +13,12 @@ import { getPendingSales } from './services/db';
 import { SalesHistoryModal } from './components/SalesHistoryModal';
 import { CustomerSearchModal } from './components/CustomerSearchModal'; 
 import { useActiveDiscounts } from './hooks/useDiscounts'; 
+
+import { CashManagementModal } from './components/CashManagementModal'; 
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
-  History, Tag, UserPlus 
+  History, Tag, UserPlus, Wallet 
 } from 'lucide-react';
 
 const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
@@ -71,6 +73,9 @@ function App() {
   const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  
+  
+  const [isCashManagementOpen, setIsCashManagementOpen] = useState(false);
   
   useBarcodeScanner(inventory);
 
@@ -163,15 +168,21 @@ function App() {
           <div className="flex items-center gap-2 font-bold text-xl text-gray-800 tracking-tight shrink-0">Enterprise POS</div>
           <div className="flex items-center gap-2 shrink-0">
             {currentShift && (
-              <button onClick={() => setIsCloseShiftOpen(true)} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-red-200">
-                <LogOut size={14} /> Close Register
-              </button>
+              <>
+                {/* NEW: Cash Drop Button (Only shows when shift is active) */}
+                <button onClick={() => setIsCashManagementOpen(true)} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-green-200">
+                  <Wallet size={14} /> Cash Drop
+                </button>
+                <button onClick={() => setIsCloseShiftOpen(true)} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-red-200">
+                  <LogOut size={14} /> Close Register
+                </button>
+              </>
             )}
-            <button onClick={logout} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors border border-gray-200">
-              <UserMinus size={14} /> Logout
-            </button>
             <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-blue-200">
               <History size={14} /> History
+            </button>
+            <button onClick={logout} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors border border-gray-200">
+              <UserMinus size={14} /> Logout
             </button>
           </div>
           <div className="relative max-w-md w-full">
@@ -268,10 +279,15 @@ function App() {
           <button onClick={() => setIsCheckoutOpen(true)} disabled={items.length === 0} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-lg font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-colors shadow-sm"><CreditCard size={22} /> Process Checkout</button>
         </div>
       </div>
+
+      {/* --- ALL MODALS DOWN HERE --- */}
       {!isShiftLoading && !currentShift && <ShiftGuard />}
+      
       {isCloseShiftOpen && <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />}
       
-      {/* 5. PASS AVAILABLE POINTS TO MODAL */}
+      {/* NEW: Render Cash Management Modal */}
+      {isCashManagementOpen && <CashManagementModal isOpen={isCashManagementOpen} onClose={() => setIsCashManagementOpen(false)} />}
+      
       {isCheckoutOpen && (
         <CheckoutModal 
           onClose={() => setIsCheckoutOpen(false)} 
@@ -282,6 +298,7 @@ function App() {
       )} 
       
       {isHistoryOpen && <SalesHistoryModal onClose={() => setIsHistoryOpen(false)} />}
+      
       <CustomerSearchModal 
         isOpen={isCustomerModalOpen} 
         onClose={() => setIsCustomerModalOpen(false)} 

@@ -1,5 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+
+export interface ICashMovement {
+  type: 'PAY_IN' | 'PAY_OUT';
+  amount: number;
+  reason: string;
+  timestamp: Date;
+}
+
 export interface IShift extends Document {
   tenantId: mongoose.Types.ObjectId;
   cashierId: mongoose.Types.ObjectId;
@@ -13,6 +21,7 @@ export interface IShift extends Document {
   actualCash?: number;
   status: 'OPEN' | 'CLOSED';
   notes?: string;
+  cashMovements: ICashMovement[]; 
 }
 
 const ShiftSchema: Schema = new Schema(
@@ -28,11 +37,18 @@ const ShiftSchema: Schema = new Schema(
     status: { type: String, enum: ['OPEN', 'CLOSED'], default: 'OPEN' },
     actualCash: { type: Number },
     totalTransactions: { type: Number, default: 0 },
-    notes: { type: String }
+    notes: { type: String },
+    
+    
+    cashMovements: [{
+      type: { type: String, enum: ['PAY_IN', 'PAY_OUT'], required: true },
+      amount: { type: Number, required: true },
+      reason: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now }
+    }]
   },
   { timestamps: true }
 );
-
 
 ShiftSchema.index(
   { cashierId: 1, status: 1 }, 
