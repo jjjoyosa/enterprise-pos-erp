@@ -132,11 +132,17 @@ export const login = async (req: Request, res: Response) => {
       }
 
       
-      const token = jwt.sign(
-        { id: employee._id, tenantId: employee.tenantId, role: employee.role, branchId: employee.branchId },
-        process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
-        { expiresIn: '12h' }
-      );
+      
+const token = jwt.sign(
+  { 
+    userId: employee._id, 
+    tenantId: employee.tenantId, 
+    role: employee.role, 
+    branchId: employee.branchId 
+  },
+  process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
+  { expiresIn: '12h' }
+);
       const refreshToken = jwt.sign(
         { id: employee._id, tenantId: employee.tenantId, role: employee.role, branchId: employee.branchId },
         process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
