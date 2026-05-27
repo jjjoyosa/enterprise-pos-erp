@@ -33,7 +33,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const tenantId = req.tenantId || req.user?.tenantId || req.body?.tenantId;
 
     if (!tenantId) {
-      // Add a log to see EXACTLY what is in req.user
+      
       console.log("DEBUG: Full req.user object:", req.user);
       return res.status(401).json({ error: 'Unauthorized: tenantId is missing from token' });
     }

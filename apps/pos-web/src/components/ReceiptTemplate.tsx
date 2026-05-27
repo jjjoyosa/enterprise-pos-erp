@@ -14,16 +14,25 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
     hour: '2-digit', minute: '2-digit'
   });
 
+  
+  const isVatable = true; 
+  const vatableSales = isVatable ? sale.total / 1.12 : 0;
+  const vatAmount = isVatable ? sale.total - vatableSales : 0;
+  const vatExemptSales = isVatable ? 0 : sale.total;
+  const zeroRatedSales = 0;
+
   return (
     <div 
       id="printable-receipt-container" 
       className="font-mono text-sm p-4 text-black bg-white w-full max-w-sm mx-auto shadow-sm"
     >
-      {/* Header */}
+      {/* BIR CORPORATE HEADER */}
       <div className="text-center mb-4">
         <h2 className="text-xl font-bold font-sans">ENTERPRISE POS</h2>
         <p className="text-xs mt-1">Acme Corporation Headquarters</p>
         <p className="text-xs">Quezon City, Metro Manila</p>
+        <p className="text-xs font-bold mt-1">VAT REG TIN: 123-456-789-0000</p>
+        <p className="text-[10px]">MIN: 123456789 | SN: 987654321</p>
         <div className="border-b-2 border-dashed border-gray-400 my-3"></div>
       </div>
 
@@ -46,6 +55,12 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
             }
           </span>
         </div>
+        {sale.customerId && (
+          <div className="flex justify-between mt-1 pt-1 border-t border-gray-200 border-dashed">
+            <span>Customer:</span>
+            <span className="font-bold">{sale.customerId.firstName} {sale.customerId.lastName}</span>
+          </div>
+        )}
       </div>
 
       <div className="border-b-2 border-dashed border-gray-400 my-3"></div>
@@ -104,15 +119,33 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
           <span>Payment Method:</span>
           <span>{sale.paymentMethod}</span>
         </div>
-        <div className="flex justify-between text-gray-500">
-          <span>VAT (12%):</span>
-          <span>₱{sale.tax?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+      </div>
+
+      <div className="border-b-2 border-dashed border-gray-400 my-3"></div>
+
+      {/* BIR VAT BREAKDOWN */}
+      <div className="text-[11px] text-gray-600 space-y-1">
+        <div className="flex justify-between">
+          <span>VATable Sales:</span>
+          <span>₱{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>VAT Amount (12%):</span>
+          <span>₱{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>VAT-Exempt Sales:</span>
+          <span>₱{vatExemptSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Zero-Rated Sales:</span>
+          <span>₱{zeroRatedSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
 
       <div className="border-b-2 border-dashed border-gray-400 my-4"></div>
 
-      {/* LOYALTY REWARDS SECTION ADDED HERE */}
+      {/* LOYALTY REWARDS SECTION */}
       {sale.customerId && (
         <>
           <div className="text-center text-xs mb-4">
@@ -127,10 +160,12 @@ export const ReceiptTemplate: React.FC<ReceiptTemplateProps> = ({ sale, change, 
         </>
       )}
 
-      {/* Footer */}
+      {/* BIR FOOTER */}
       <div className="text-center text-xs">
+        <p className="font-bold text-sm mb-1 uppercase">THIS IS AN OFFICIAL RECEIPT</p>
         <p className="font-bold">Thank you for your business!</p>
-        <p className="mt-1 text-[10px] text-gray-500">Please keep this receipt for your records.</p>
+        <p className="mt-2 text-[10px] text-gray-500">Software Provider: Tech</p>
+        <p className="text-[10px] text-gray-500">PTU No: 123-456-7890-11111</p>
         <p className="mt-3 font-mono tracking-[0.2em] text-lg">*{sale.receiptNumber?.slice(-8)}*</p>
       </div>
 

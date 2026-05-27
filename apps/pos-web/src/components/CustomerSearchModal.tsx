@@ -17,7 +17,7 @@ export const CustomerSearchModal = ({ isOpen, onClose, onSelect }: any) => {
   const [query, setQuery] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   
-  // States for the Form Modal
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
@@ -35,12 +35,12 @@ export const CustomerSearchModal = ({ isOpen, onClose, onSelect }: any) => {
   }, [isOpen]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevent the row click from triggering 'onSelect'
+    e.stopPropagation(); 
     if (!window.confirm("Are you sure you want to delete this customer?")) return;
     
     try {
       await api.delete(`/customers/${id}`);
-      fetchCustomers(); // Refresh list
+      fetchCustomers(); 
     } catch (error) {
       console.error("Failed to delete customer:", error);
     }

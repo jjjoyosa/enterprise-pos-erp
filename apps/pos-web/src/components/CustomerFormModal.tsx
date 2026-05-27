@@ -6,7 +6,7 @@ interface CustomerFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: any; // Pass existing customer data to trigger "Edit" mode
+  initialData?: any; 
 }
 
 export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ isOpen, onClose, onSuccess, initialData }) => {
