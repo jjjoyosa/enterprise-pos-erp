@@ -16,7 +16,7 @@ import { useActiveDiscounts } from './hooks/useDiscounts';
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
-  History, Tag 
+  History, Tag, UserPlus 
 } from 'lucide-react';
 
 
@@ -279,18 +279,46 @@ function App() {
         <div className="bg-gray-50 p-6 border-t border-gray-200 shrink-0">
           <div className="space-y-3 mb-6 border-b border-gray-200 pb-4">
             <div className="flex justify-between items-center text-sm"><span className="text-gray-500">Subtotal</span><span className="font-semibold text-gray-800">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-            <div className="px-4 pt-4">
-          <button 
-            onClick={() => setIsCustomerModalOpen(true)}
-            className="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 hover:bg-blue-100 transition-colors"
-          >
-            <span className="font-medium">
-              {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : "Assign Customer"}
-            </span>
-            <span className="text-[10px] bg-blue-200 px-2 py-1 rounded">
-              {selectedCustomer ? 'Change' : 'Select'}
-            </span>
-          </button>
+            {/* Customer Assignment Block */}
+        <div className="pt-2 pb-2">
+          {!selectedCustomer ? (
+            <button 
+              onClick={() => setIsCustomerModalOpen(true)}
+              className="w-full flex items-center justify-between p-3 bg-white border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm"
+            >
+              <span className="font-medium flex items-center gap-2">
+                <UserPlus size={16} className="text-gray-400 group-hover:text-blue-500" /> 
+                Assign Customer (Optional)
+              </span>
+              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold uppercase">
+                Select
+              </span>
+            </button>
+          ) : (
+            <div className="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm transition-all shadow-sm group">
+              <div 
+                onClick={() => setIsCustomerModalOpen(true)} 
+                className="flex-1 flex flex-col text-left cursor-pointer hover:opacity-80"
+              >
+                <span className="text-[10px] font-bold uppercase text-blue-500 tracking-wider mb-0.5">
+                  Linked Customer
+                </span>
+                <span className="font-semibold text-blue-900 line-clamp-1">
+                  {selectedCustomer.firstName} {selectedCustomer.lastName}
+                </span>
+              </div>
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setSelectedCustomer(null); 
+                }} 
+                className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 rounded-md transition-colors shrink-0"
+                title="Remove Customer (Guest Checkout)"
+              >
+                <UserMinus size={18} />
+              </button>
+            </div>
+          )}
         </div>
             {activeDiscounts.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
