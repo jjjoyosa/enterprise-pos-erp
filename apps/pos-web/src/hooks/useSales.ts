@@ -82,6 +82,7 @@ export const useProcessSale = () => {
       if (!data?.isOffline) {
         queryClient.invalidateQueries({ queryKey: ['pos-inventory-levels'] });
         queryClient.invalidateQueries({ queryKey: ['pos-products'] });
+        queryClient.invalidateQueries({ queryKey: ['sales-history'] });
       }
     }
   });

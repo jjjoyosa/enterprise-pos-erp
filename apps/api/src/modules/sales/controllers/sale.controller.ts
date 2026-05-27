@@ -232,6 +232,7 @@ export const processRefund = async (req: Request, res: Response) => {
 
     let totalRefundAmount = 0;
 
+    
     for (const refundReq of itemsToRefund) {
       const saleItem = sale.items.find((i: any) => i.productId.toString() === refundReq.productId);
       if (!saleItem) throw new Error(`Product ${refundReq.productId} was not on this receipt`);
@@ -258,6 +259,33 @@ export const processRefund = async (req: Request, res: Response) => {
     }
 
     const isFullRefund = totalRefundAmount >= sale.total;
+
+    
+    await Shift.findOneAndUpdate(
+      { _id: sale.shiftId, tenantId },
+      { $inc: { expectedCash: -totalRefundAmount } }
+    );
+
+    
+    if (sale.customerId) {
+      
+      const pointsEarned = sale.pointsRedeemed > 0 ? 0 : Math.floor(totalRefundAmount / 100);
+      
+      
+      const pointsToReturn = isFullRefund ? sale.pointsRedeemed : 0;
+      
+      await Customer.findOneAndUpdate(
+        { _id: sale.customerId, tenantId },
+        { 
+          $inc: { 
+            lifetimeValue: -totalRefundAmount,
+            loyaltyPoints: pointsToReturn - pointsEarned 
+          } 
+        }
+      );
+    }
+
+    
     sale.status = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
     sale.notes = (sale.notes ? sale.notes + ' | ' : '') + `Refunded ${isFullRefund ? 'Fully' : 'Partially'}: ₱${totalRefundAmount} - ${refundReason}`;
     
