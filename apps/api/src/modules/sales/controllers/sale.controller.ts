@@ -11,7 +11,8 @@ import { generateReceiptNumber } from '../../../utils/receiptGenerator';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
-    const { items, paymentMethod, discount = 0, customerId } = req.body;
+    
+    const { items, paymentMethod, discount = 0, customerId, pointsRedeemed = 0 } = req.body;
     const tenantId = (req as any).tenantId; 
     const cashierId = (req as any).userId; 
 
@@ -48,7 +49,8 @@ export const processSale = async (req: Request, res: Response) => {
       });
     }
 
-    const finalTotal = calculatedSubtotal - discount;
+    
+    const finalTotal = calculatedSubtotal - discount - pointsRedeemed;
     const calculatedTax = finalTotal - (finalTotal / 1.12); 
     const receiptNumber = generateReceiptNumber();
 
@@ -63,6 +65,7 @@ export const processSale = async (req: Request, res: Response) => {
       subtotal: calculatedSubtotal,
       tax: calculatedTax,
       discount,
+      pointsRedeemed, 
       total: finalTotal,
       paymentMethod
     });
@@ -107,10 +110,9 @@ export const processSale = async (req: Request, res: Response) => {
       );
     }
     
-    // LOYALTY ENGINE CALCULATION ADDED HERE
     let pointsEarned = 0;
     if (customerId) {
-      pointsEarned = Math.floor(finalTotal / 100); // 1 point per ₱100 spent
+      pointsEarned = Math.floor(finalTotal / 100); 
 
       await Customer.findOneAndUpdate(
         { _id: customerId, tenantId },
@@ -118,7 +120,8 @@ export const processSale = async (req: Request, res: Response) => {
           $inc: { 
             totalVisits: 1, 
             lifetimeValue: finalTotal,
-            loyaltyPoints: pointsEarned // Increments the points
+            
+            loyaltyPoints: pointsEarned - pointsRedeemed 
           } 
         }
       );
@@ -131,14 +134,13 @@ export const processSale = async (req: Request, res: Response) => {
     res.status(201).json({ 
       message: 'Sale completed successfully', 
       sale: newSale,
-      pointsEarned // Return points to frontend
+      pointsEarned
     });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// ... keep getSales, getDashboardAnalytics, and processRefund as they were ...
 export const getSales = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
@@ -151,13 +153,11 @@ export const getSales = async (req: Request, res: Response) => {
     
     const formattedSales = sales.map((sale: any) => {
       const saleObj = sale.toObject();
-      
       if (saleObj.cashierId) {
         if (!saleObj.cashierId.name && saleObj.cashierId.firstName) {
           saleObj.cashierId.name = `${saleObj.cashierId.firstName} ${saleObj.cashierId.lastName || ''}`.trim();
         }
       }
-      
       return saleObj;
     });
 
@@ -175,18 +175,12 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const todaysSales = await Sale.find({ 
-      tenantId, 
-      createdAt: { $gte: today } 
-    });
+    const todaysSales = await Sale.find({ tenantId, createdAt: { $gte: today } });
 
     const todaysRevenue = todaysSales.reduce((sum, sale) => sum + sale.total, 0);
     const orderCount = todaysSales.length;
 
-    const lowStockInventory = await Inventory.find({ 
-      tenantId, 
-      quantity: { $lt: 10 } 
-    })
+    const lowStockInventory = await Inventory.find({ tenantId, quantity: { $lt: 10 } })
     .populate('productId', 'name sku')
     .limit(5);
 
@@ -218,13 +212,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       };
     }));
 
-    res.status(200).json({
-      todaysRevenue,
-      orderCount,
-      lowStockProducts,
-      topProducts: populatedTopProducts
-    });
-
+    res.status(200).json({ todaysRevenue, orderCount, lowStockProducts, topProducts: populatedTopProducts });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -246,13 +234,8 @@ export const processRefund = async (req: Request, res: Response) => {
 
     for (const refundReq of itemsToRefund) {
       const saleItem = sale.items.find((i: any) => i.productId.toString() === refundReq.productId);
-      
-      if (!saleItem) {
-        throw new Error(`Product ${refundReq.productId} was not on this receipt`);
-      }
-      if (refundReq.quantity > saleItem.quantity) {
-        throw new Error(`Cannot refund more than originally purchased for product ${refundReq.productId}`);
-      }
+      if (!saleItem) throw new Error(`Product ${refundReq.productId} was not on this receipt`);
+      if (refundReq.quantity > saleItem.quantity) throw new Error(`Cannot refund more than originally purchased`);
 
       const refundItemAmount = saleItem.unitPrice * refundReq.quantity;
       totalRefundAmount += refundItemAmount;
@@ -275,18 +258,12 @@ export const processRefund = async (req: Request, res: Response) => {
     }
 
     const isFullRefund = totalRefundAmount >= sale.total;
-    
     sale.status = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
     sale.notes = (sale.notes ? sale.notes + ' | ' : '') + `Refunded ${isFullRefund ? 'Fully' : 'Partially'}: ₱${totalRefundAmount} - ${refundReason}`;
     
     await sale.save();
 
-    res.status(200).json({ 
-      message: 'Refund processed successfully and stock restored.', 
-      refundAmount: totalRefundAmount,
-      saleStatus: sale.status
-    });
-
+    res.status(200).json({ message: 'Refund processed successfully and stock restored.', refundAmount: totalRefundAmount, saleStatus: sale.status });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

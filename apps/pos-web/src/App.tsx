@@ -19,10 +19,8 @@ import {
   History, Tag, UserPlus 
 } from 'lucide-react';
 
-
 const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
   const [inputValue, setInputValue] = useState(item.quantity.toString());
-
   
   useEffect(() => {
     setInputValue(item.quantity.toString());
@@ -47,38 +45,10 @@ const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
       </div>
       
       <div className="flex items-center gap-1 bg-white rounded-md border border-gray-200 p-1">
-        <button 
-          onClick={() => updateQuantity(item.productId, item.quantity - 1)} 
-          disabled={item.quantity <= 1}
-          className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-50 transition-colors"
-        >
-          <Minus size={14} />
-        </button>
-        
-        <input 
-          type="number" 
-          min="1"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onBlur={handleBlur}
-          onFocus={(e) => e.target.select()}
-          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-          className="w-10 text-center font-semibold text-sm border-none bg-transparent focus:ring-2 focus:ring-blue-500 outline-none p-0 rounded-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-        />
-
-        <button 
-          onClick={() => updateQuantity(item.productId, item.quantity + 1)} 
-          className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"
-        >
-          <Plus size={14} />
-        </button>
-        
-        <button 
-          onClick={() => removeItem(item.productId)} 
-          className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded ml-1 transition-colors"
-        >
-          <Trash2 size={14} />
-        </button>
+        <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 1} className="p-1 hover:bg-gray-100 rounded text-gray-500 disabled:opacity-50 transition-colors"><Minus size={14} /></button>
+        <input type="number" min="1" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onBlur={handleBlur} onFocus={(e) => e.target.select()} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} className="w-10 text-center font-semibold text-sm border-none bg-transparent focus:ring-2 focus:ring-blue-500 outline-none p-0 rounded-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+        <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500 transition-colors"><Plus size={14} /></button>
+        <button onClick={() => removeItem(item.productId)} className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded ml-1 transition-colors"><Trash2 size={14} /></button>
       </div>
     </div>
   );
@@ -86,17 +56,12 @@ const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('erp_token');
-  if (!isAuthenticated) {
-    return <Login />;
-  }
+  if (!isAuthenticated) return <Login />;
 
   const { data: inventory = [], isLoading } = useInventory();
   const { data: activeDiscounts = [], isLoading: isLoadingDiscounts } = useActiveDiscounts();
   
-  const { 
-    items, total, subtotal, tax, discount, 
-    addItem, updateQuantity, removeItem, clearCart, setDiscount 
-  } = useCartStore();
+  const { items, total, subtotal, tax, discount, addItem, updateQuantity, removeItem, clearCart, setDiscount } = useCartStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -113,9 +78,7 @@ function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { mutate: syncSales, isPending: isSyncingSales } = useSyncOfflineSales();
 
-  const handleDiscountChange = (id: string) => {
-    setSelectedDiscountId(id);
-  };
+  const handleDiscountChange = (id: string) => setSelectedDiscountId(id);
 
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -129,18 +92,16 @@ function App() {
       return;
     }
 
-    const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+    const currentSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
     
     let calculatedDiscount = 0;
-    if (subtotal >= (rule.minPurchaseAmount || 0)) {
-        if (rule.type === 'PERCENTAGE') {
-            calculatedDiscount = subtotal * (rule.value / 100);
-        } else {
-            calculatedDiscount = rule.value;
-        }
+    if (currentSubtotal >= (rule.minPurchaseAmount || 0)) {
+        calculatedDiscount = rule.type === 'PERCENTAGE' 
+            ? currentSubtotal * (rule.value / 100) 
+            : rule.value;
     }
 
-    if (subtotal < (rule.minPurchaseAmount || 0)) {
+    if (currentSubtotal < (rule.minPurchaseAmount || 0)) {
       if (discountError !== `Requires min purchase of ₱${rule.minPurchaseAmount}.`) {
          setDiscountError(`Requires min purchase of ₱${rule.minPurchaseAmount}.`);
          setDiscount(0);
@@ -170,9 +131,7 @@ function App() {
     };
   }, []);
 
-  const handleSync = () => {
-    syncSales(undefined, { onSuccess: () => setOfflineCount(0) });
-  };
+  const handleSync = () => syncSales(undefined, { onSuccess: () => setOfflineCount(0) });
 
   const filteredInventory = useMemo(() => {
     if (!inventory) return [];
@@ -200,7 +159,7 @@ function App() {
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden text-gray-900">
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 shrink-0 z-10 gap-4">
+      <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-2 font-bold text-xl text-gray-800 tracking-tight shrink-0">Enterprise POS</div>
           <div className="flex items-center gap-2 shrink-0">
             {currentShift && (
@@ -265,58 +224,28 @@ function App() {
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400"><ShoppingBag size={48} className="mb-4 opacity-50 text-gray-300" /><p className="text-sm font-medium">Scan barcodes or select items</p></div>
           ) : (
-            
             items.map((item) => (
-              <CartItemRow 
-                key={item.productId} 
-                item={item} 
-                updateQuantity={updateQuantity} 
-                removeItem={removeItem} 
-              />
+              <CartItemRow key={item.productId} item={item} updateQuantity={updateQuantity} removeItem={removeItem} />
             ))
           )}
         </div>
         <div className="bg-gray-50 p-6 border-t border-gray-200 shrink-0">
           <div className="space-y-3 mb-6 border-b border-gray-200 pb-4">
             <div className="flex justify-between items-center text-sm"><span className="text-gray-500">Subtotal</span><span className="font-semibold text-gray-800">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-            {/* Customer Assignment Block */}
+            
         <div className="pt-2 pb-2">
           {!selectedCustomer ? (
-            <button 
-              onClick={() => setIsCustomerModalOpen(true)}
-              className="w-full flex items-center justify-between p-3 bg-white border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm"
-            >
-              <span className="font-medium flex items-center gap-2">
-                <UserPlus size={16} className="text-gray-400 group-hover:text-blue-500" /> 
-                Assign Customer (Optional)
-              </span>
-              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold uppercase">
-                Select
-              </span>
+            <button onClick={() => setIsCustomerModalOpen(true)} className="w-full flex items-center justify-between p-3 bg-white border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm">
+              <span className="font-medium flex items-center gap-2"><UserPlus size={16} className="text-gray-400 group-hover:text-blue-500" /> Assign Customer (Optional)</span>
+              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold uppercase">Select</span>
             </button>
           ) : (
             <div className="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm transition-all shadow-sm group">
-              <div 
-                onClick={() => setIsCustomerModalOpen(true)} 
-                className="flex-1 flex flex-col text-left cursor-pointer hover:opacity-80"
-              >
-                <span className="text-[10px] font-bold uppercase text-blue-500 tracking-wider mb-0.5">
-                  Linked Customer
-                </span>
-                <span className="font-semibold text-blue-900 line-clamp-1">
-                  {selectedCustomer.firstName} {selectedCustomer.lastName}
-                </span>
+              <div onClick={() => setIsCustomerModalOpen(true)} className="flex-1 flex flex-col text-left cursor-pointer hover:opacity-80">
+                <span className="text-[10px] font-bold uppercase text-blue-500 tracking-wider mb-0.5">Linked Customer</span>
+                <span className="font-semibold text-blue-900 line-clamp-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</span>
               </div>
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  setSelectedCustomer(null); 
-                }} 
-                className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 rounded-md transition-colors shrink-0"
-                title="Remove Customer (Guest Checkout)"
-              >
-                <UserMinus size={18} />
-              </button>
+              <button onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }} className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 rounded-md transition-colors shrink-0" title="Remove Customer (Guest Checkout)"><UserMinus size={18} /></button>
             </div>
           )}
         </div>
@@ -341,13 +270,19 @@ function App() {
       </div>
       {!isShiftLoading && !currentShift && <ShiftGuard />}
       {isCloseShiftOpen && <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />}
-{isCheckoutOpen && (
-  <CheckoutModal 
-    onClose={() => setIsCheckoutOpen(false)} 
-    customerId={selectedCustomer?._id} 
-  />
-)}      {isHistoryOpen && <SalesHistoryModal onClose={() => setIsHistoryOpen(false)} />}
-        <CustomerSearchModal 
+      
+      {/* 5. PASS AVAILABLE POINTS TO MODAL */}
+      {isCheckoutOpen && (
+        <CheckoutModal 
+          onClose={() => setIsCheckoutOpen(false)} 
+          onClearCustomer={() => setSelectedCustomer(null)}
+          customerId={selectedCustomer?._id} 
+          availablePoints={selectedCustomer?.loyaltyPoints || 0}
+        />
+      )} 
+      
+      {isHistoryOpen && <SalesHistoryModal onClose={() => setIsHistoryOpen(false)} />}
+      <CustomerSearchModal 
         isOpen={isCustomerModalOpen} 
         onClose={() => setIsCustomerModalOpen(false)} 
         onSelect={(customer: any) => setSelectedCustomer(customer)} 

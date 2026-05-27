@@ -23,6 +23,7 @@ export interface ISale extends Document {
   
   status: 'COMPLETED' | 'VOIDED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
   notes?: string;
+  pointsRedeemed: number;
 }
 
 const SaleItemSchema = new Schema({
@@ -54,7 +55,8 @@ const SaleSchema = new Schema({
   notes: { 
     type: String, 
     required: false 
-  }
+  },
+  pointsRedeemed: { type: Number, default: 0 },
 }, { timestamps: true });
 
 SaleSchema.index({ tenantId: 1, receiptNumber: 1 }, { unique: true });

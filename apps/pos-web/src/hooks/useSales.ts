@@ -13,6 +13,7 @@ export interface SalePayload {
   totalAmount: number;
   amountTendered: number;
   changeDue: number;
+  pointsRedeemed?: number;
   items: Array<{ productId: string; name: string; quantity: number; unitPrice: number; subtotal: number }>;
 }
 
