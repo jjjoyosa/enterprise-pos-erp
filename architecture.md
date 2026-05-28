@@ -970,9 +970,8 @@ That list is essentially the **complete functional scope** of an enterprise POS/
 
 
 
-
-🗺️ The Master Enterprise Blueprint (Version 3.0)
-🛠️ Sprint 6: Stabilization, UX & Core CRUD (Immediate Next Step)
+🗺️ The Master Enterprise Blueprint (Version 3.1)
+✅ Sprint 6: Stabilization, UX & Core CRUD [COMPLETED]
 Patching the holes and polishing the core before scaling.
 
 Action 1: The Refund Sync Bug. Fix the inventory backend to accurately restock specific batches upon a void/refund.
@@ -983,16 +982,18 @@ Action 3: Complete the CRUD. Add Edit/Delete modals for Staff and Suppliers in t
 
 Action 4: Product Images. Add image upload support to the catalog and render them in the POS cart grid.
 
-🛡️ Sprint 7: Manager Tools & Deep Security
-Giving managers power, tracking their moves, and hiding what cashiers shouldn't see.
+🛡️ Sprint 7: Manager Tools, UX & Deep Security (Immediate Next Step)
+Giving managers power, organizing the cashier view, tracking moves, and hiding what cashiers shouldn't see.
 
-Action 1: Mid-Shift Manager Dashboard. A modal in the POS where managers can see live drawer expectations and authorize payouts.
+Action 1: POS Category Tabs & Advanced Filters. Add horizontal category tabs above the POS grid and enhance the search/filter logic for lightning-fast checkout.
 
-Action 2: Manager PIN Overrides. The keypad modal blocking cashiers from issuing refunds without a 4-digit PIN.
+Action 2: Manager PIN Overrides. The keypad modal blocking cashiers from issuing refunds or voiding transactions without a 4-digit Manager/Admin PIN.
 
-Action 3: Frontend RBAC (UI Guardrails). Build a <RoleGuard> React component that physically hides buttons, routes, and modules (like Analytics or Settings) from unauthorized users across both admin-web and pos-web.
+Action 3: Mid-Shift Manager Dashboard. A modal in the POS where managers can see live drawer expectations and authorize payouts.
 
-Action 4: The Audit Trail. The immutable AuditLog backend collection tracking exactly who changed what.
+Action 4: Frontend RBAC (UI Guardrails). Build a <RoleGuard> React component that physically hides buttons, routes, and modules (like Analytics or Settings) from unauthorized users across both admin-web and pos-web.
+
+Action 5: The Audit Trail. The immutable AuditLog backend collection tracking exactly who changed what.
 
 🍔 Sprint 8: F&B Engine (Bill of Materials) & Purchasing
 Advanced inventory mechanics for restaurants and manufacturing.

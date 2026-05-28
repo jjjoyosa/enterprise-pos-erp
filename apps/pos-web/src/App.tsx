@@ -14,6 +14,7 @@ import { SalesHistoryModal } from './components/SalesHistoryModal';
 import { CustomerSearchModal } from './components/CustomerSearchModal'; 
 import { useActiveDiscounts } from './hooks/useDiscounts'; 
 import { CashManagementModal } from './components/CashManagementModal'; 
+import { useCategories } from './hooks/useCategories'; // NEW HOOK IMPORT
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
@@ -61,10 +62,13 @@ function App() {
 
   const { data: inventory = [], isLoading } = useInventory();
   const { data: activeDiscounts = [], isLoading: isLoadingDiscounts } = useActiveDiscounts();
+  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(); // NEW CATEGORIES
   
   const { items, total, subtotal, tax, discount, addItem, updateQuantity, removeItem, clearCart, setDiscount } = useCartStore();
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL'); // NEW CATEGORY STATE
+  
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedDiscountId, setSelectedDiscountId] = useState<string>('');
   const [discountError, setDiscountError] = useState<string | null>(null);
@@ -149,7 +153,16 @@ function App() {
       }
     });
 
-    const aggregatedInventory = Array.from(aggregatedMap.values());
+    let aggregatedInventory = Array.from(aggregatedMap.values());
+    
+    // NEW: Apply Category Filter
+    if (selectedCategory !== 'ALL') {
+      aggregatedInventory = aggregatedInventory.filter(
+        item => item.productId.categoryId === selectedCategory || 
+                item.productId.categoryId?._id === selectedCategory
+      );
+    }
+
     const query = searchQuery.toLowerCase().trim();
     if (!query) return aggregatedInventory;
     
@@ -157,7 +170,7 @@ function App() {
       const product = item.productId;
       return product.name.toLowerCase().includes(query) || product.sku.toLowerCase().includes(query) || product.barcode?.toLowerCase().includes(query);
     });
-  }, [inventory, searchQuery]);
+  }, [inventory, searchQuery, selectedCategory]); // Added selectedCategory to dependencies
 
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden text-gray-900">
@@ -197,6 +210,38 @@ function App() {
             </div>
           </div>
         </header>
+
+        {/* NEW: Horizontal Category Tabs */}
+        <div className="bg-white px-6 py-3 border-b border-gray-200 flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0 shadow-sm z-0">
+          <button
+            onClick={() => setSelectedCategory('ALL')}
+            className={`whitespace-nowrap px-5 py-2 rounded-xl text-sm font-bold transition-all ${
+              selectedCategory === 'ALL' 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            All Items
+          </button>
+          
+          {isLoadingCategories ? (
+            <div className="text-xs text-gray-400 font-medium px-4">Loading categories...</div>
+          ) : (
+            categories.map((cat: any) => (
+              <button
+                key={cat._id}
+                onClick={() => setSelectedCategory(cat._id)}
+                className={`whitespace-nowrap px-5 py-2 rounded-xl text-sm font-bold transition-all ${
+                  selectedCategory === cat._id 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' 
+                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))
+          )}
+        </div>
 
         <main className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
