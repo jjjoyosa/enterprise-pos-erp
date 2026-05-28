@@ -10,7 +10,8 @@ router.use(requireAuth);
 router.get('/', getEmployees);
 router.post('/', createEmployee);
 
-router.patch('/:id', requireAuth, updateEmployee); 
-router.delete('/:id', requireAuth, archiveEmployee); 
+
+router.put('/:id', updateEmployee); 
+router.delete('/:id', archiveEmployee); 
 
 export default router;

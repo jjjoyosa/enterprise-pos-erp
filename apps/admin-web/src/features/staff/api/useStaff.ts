@@ -29,7 +29,32 @@ export const useCreateStaff = () => {
       return data;
     },
     onSuccess: () => {
-      
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+    },
+  });
+};
+
+export const useUpdateStaff = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Employee> & { pinCode?: string } }) => {
+      const { data: responseData } = await api.put(`/employees/${id}`, data);
+      return responseData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+    },
+  });
+};
+
+export const useDeleteStaff = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/employees/${id}`);
+      return data;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
     },
   });
