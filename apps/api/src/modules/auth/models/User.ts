@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IUser extends Document {
   tenantId: mongoose.Types.ObjectId;
   branchIds: mongoose.Types.ObjectId[]; 
-  roleId: mongoose.Types.ObjectId;
+  role: string; 
   email: string;
   passwordHash: string;
   firstName: string;
@@ -15,7 +15,7 @@ export interface IUser extends Document {
 const UserSchema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   branchIds: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
-  roleId: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
+  role: { type: String, enum: ['ADMIN', 'MANAGER'], default: 'ADMIN', required: true }, 
   email: { type: String, required: true, lowercase: true },
   passwordHash: { type: String, required: true },
   firstName: { type: String, required: true },
@@ -23,7 +23,6 @@ const UserSchema = new Schema({
   pinCode: { type: String },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
-
 
 UserSchema.index({ tenantId: 1, email: 1 }, { unique: true });
 

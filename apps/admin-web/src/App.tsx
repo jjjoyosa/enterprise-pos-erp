@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { LogOut, Activity, TrendingUp, Database, Package, Plus, Boxes, Users, ReceiptText, Truck, ClipboardList } from 'lucide-react'; 
 import { Dashboard } from './pages/Dashboard'; 
 import { ProductTable } from './features/inventory/components/ProductTable';
@@ -12,12 +12,24 @@ import { useAuth } from './hooks/useAuth';
 import { SalesLedger } from './features/sales/components/SalesLedger';
 
 import { SupplierManagement } from './pages/SupplierManagement'; 
-
 import { PurchaseOrderManagement } from './pages/PurchaseOrderManagement'; 
+import { RoleGuard } from './features/staff/components/RoleGuard';
 
 function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const isAuthenticated = !!localStorage.getItem('erp_token');
+
+  // Decode the token to get the user's role for the top badge
+  const userRole = useMemo(() => {
+    try {
+      const token = localStorage.getItem('erp_token');
+      if (!token) return 'UNKNOWN';
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return typeof payload.role === 'string' ? payload.role.toUpperCase() : 'AUTHENTICATED';
+    } catch (error) {
+      return 'AUTHENTICATED';
+    }
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <Login />;
@@ -42,13 +54,18 @@ function App() {
           </div>
           
           <nav className="flex gap-2 bg-gray-100 p-1 rounded-lg border border-gray-200">
-            <button 
-              onClick={() => setCurrentView('dashboard')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <TrendingUp size={16} /> Analytics
-            </button>
             
+            {/* Managers and Admins can see Analytics */}
+            <RoleGuard allowedRoles={['ADMIN', 'MANAGER']}>
+              <button 
+                onClick={() => setCurrentView('dashboard')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'dashboard' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <TrendingUp size={16} /> Analytics
+              </button>
+            </RoleGuard>
+            
+            {/* Everyone can see the Catalog */}
             <button 
               onClick={() => setCurrentView('inventory')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'inventory' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -56,6 +73,7 @@ function App() {
               <Database size={16} /> Catalog
             </button>
 
+            {/* Everyone can see Stock levels */}
             <button 
               onClick={() => setCurrentView('stock')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'stock' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -63,38 +81,48 @@ function App() {
               <Boxes size={16} /> Stock Control
             </button>
 
-            <button 
-              onClick={() => setCurrentView('staff')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'staff' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Users size={16} /> Staff
-            </button>
+            {/* ONLY Admins can manage Staff */}
+            <RoleGuard allowedRoles={['ADMIN']}>
+              <button 
+                onClick={() => setCurrentView('staff')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'staff' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Users size={16} /> Staff
+              </button>
+            </RoleGuard>
 
-            <button 
-              onClick={() => setCurrentView('sales')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'sales' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <ReceiptText size={16} /> Ledger
-            </button>
+            {/* Managers and Admins can see the Sales Ledger */}
+            <RoleGuard allowedRoles={['ADMIN', 'MANAGER']}>
+              <button 
+                onClick={() => setCurrentView('sales')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'sales' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <ReceiptText size={16} /> Ledger
+              </button>
+            </RoleGuard>
 
-            <button 
-              onClick={() => setCurrentView('suppliers')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'suppliers' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Truck size={16} /> Suppliers
-            </button>
+            {/* Managers and Admins can manage Suppliers & POs */}
+            <RoleGuard allowedRoles={['ADMIN', 'MANAGER']}>
+              <button 
+                onClick={() => setCurrentView('suppliers')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'suppliers' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Truck size={16} /> Suppliers
+              </button>
 
-            {/* ADDED: Purchasing Navigation Button */}
-            <button 
-              onClick={() => setCurrentView('purchasing')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'purchasing' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <ClipboardList size={16} /> Purchasing
-            </button>
+              <button 
+                onClick={() => setCurrentView('purchasing')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all ${currentView === 'purchasing' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <ClipboardList size={16} /> Purchasing
+              </button>
+            </RoleGuard>
+
           </nav>
           
-          <div className="text-sm font-bold text-blue-800 bg-blue-100 px-4 py-2 rounded-full border border-blue-200">
-            Admin
+          {/* DYNAMIC ROLE BADGE */}
+          <div className="text-xs font-black text-blue-800 bg-blue-100 px-4 py-2 rounded-full border border-blue-200 uppercase tracking-widest shadow-sm">
+            {userRole}
           </div>
         </div>
         
@@ -126,12 +154,14 @@ function App() {
                 <p className="text-gray-500 text-sm mt-1">Manage your catalog, pricing, and master data.</p>
               </div>
               
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors"
-              >
-                <Plus size={18} /> Add New Product
-              </button>
+              <RoleGuard allowedRoles={['ADMIN', 'MANAGER']}>
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors"
+                >
+                  <Plus size={18} /> Add New Product
+                </button>
+              </RoleGuard>
             </div>
 
             <ProductTable onOpenForm={(product: Product) => {
@@ -172,16 +202,20 @@ function App() {
               >
                 Current Stock Levels
               </button>
-              <button 
-                onClick={() => setStockTab('ledger')}
-                className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
-                  stockTab === 'ledger' 
-                    ? 'border-blue-600 text-blue-600' 
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Movement Ledger
-              </button>
+              
+              {/* Only Managers and Admins need to see the ledger */}
+              <RoleGuard allowedRoles={['ADMIN', 'MANAGER']}>
+                <button 
+                  onClick={() => setStockTab('ledger')}
+                  className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
+                    stockTab === 'ledger' 
+                      ? 'border-blue-600 text-blue-600' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Movement Ledger
+                </button>
+              </RoleGuard>
             </div>
 
             {/* Tab Content */}
@@ -200,7 +234,7 @@ function App() {
         {/* VIEW 6: Supplier Management */}
         {currentView === 'suppliers' && <SupplierManagement />}
 
-        {/* ADDED: VIEW 7: Purchase Order Management */}
+        {/* VIEW 7: Purchase Order Management */}
         {currentView === 'purchasing' && <PurchaseOrderManagement />}
         
       </main>

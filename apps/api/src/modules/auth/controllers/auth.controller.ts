@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import Tenant from '../../organizations/models/Tenant';
-import Role from '../models/Role';
 import User from '../models/User';
 import Employee from '../models/Employee'; 
 import { hashPassword } from '../../../utils/hash';
@@ -24,17 +23,12 @@ export const registerTenant = async (req: Request, res: Response) => {
       vatType: 'NON-VAT' 
     });
 
-    const adminRole = await Role.create({
-      tenantId: newTenant._id,
-      name: 'Super Admin',
-      permissions: ['*'] 
-    });
-
     const hashedPassword = await hashPassword(password);
+    
     
     const newUser = await User.create({
       tenantId: newTenant._id,
-      roleId: adminRole._id,
+      role: 'ADMIN', 
       email,
       passwordHash: hashedPassword,
       firstName,
@@ -59,46 +53,31 @@ export const registerTenant = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    console.log("-----------------------------------------");
-    console.log("LOGIN ATTEMPT RECEIVED:");
-    console.log("Payload:", req.body);
-
     const { email, password, pinCode } = req.body;
-    
-    
     const secretKey = password || pinCode;
-    console.log("Extracted Secret Key:", secretKey);
 
     if (!email || !secretKey) {
-      console.log("FAIL: Missing email or secretKey");
       return res.status(400).json({ error: 'Email and Password/PIN are required.' });
     }
 
     
-    console.log(`Searching for Super Admin with email: ${email}`);
     const user = await User.findOne({ email, isActive: true });
     
     if (user) {
-      console.log("SUCCESS: Found Admin in Database!");
-      
       const isMatch = await bcrypt.compare(secretKey, user.passwordHash);
-      console.log("Bcrypt Match Result:", isMatch);
-      
       if (!isMatch) {
-        console.log("FAIL: Passwords did not match!");
         return res.status(401).json({ error: 'Invalid credentials.' });
       }
 
-      console.log("SUCCESS: Password matched. Generating tokens...");
       
       const token = jwt.sign(
-        { userId: user._id, tenantId: user.tenantId, roleId: user.roleId },
-        process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
+        { userId: user._id, tenantId: user.tenantId, role: user.role },
+        JWT_SECRET,
         { expiresIn: '12h' }
       );
       const refreshToken = jwt.sign(
-        { userId: user._id, tenantId: user.tenantId, roleId: user.roleId },
-        process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
+        { userId: user._id, tenantId: user.tenantId, role: user.role },
+        JWT_SECRET,
         { expiresIn: '7d' }
       );
 
@@ -110,42 +89,34 @@ export const login = async (req: Request, res: Response) => {
           _id: user._id,
           email: user.email,
           name: `${user.firstName} ${user.lastName}`,
-          role: 'ADMIN',
+          role: user.role,
           tenantId: user.tenantId
         }
       });
     }
 
     
-    console.log("Admin not found. Searching for Employee...");
     const employee = await Employee.findOne({ email, isActive: true });
     
     if (employee) {
-      console.log("SUCCESS: Found Employee in Database!");
-      
       const isPinValid = await bcrypt.compare(secretKey, employee.pinCode);
-      console.log("Bcrypt PIN Match Result:", isPinValid);
-      
       if (!isPinValid) {
-        console.log("FAIL: PIN did not match!");
         return res.status(401).json({ error: 'Invalid credentials.' });
       }
 
-      
-      
-const token = jwt.sign(
-  { 
-    userId: employee._id, 
-    tenantId: employee.tenantId, 
-    role: employee.role, 
-    branchId: employee.branchId 
-  },
-  process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
-  { expiresIn: '12h' }
-);
+      const token = jwt.sign(
+        { 
+          userId: employee._id, 
+          tenantId: employee.tenantId, 
+          role: employee.role, 
+          branchId: employee.branchId 
+        },
+        JWT_SECRET,
+        { expiresIn: '12h' }
+      );
       const refreshToken = jwt.sign(
         { id: employee._id, tenantId: employee.tenantId, role: employee.role, branchId: employee.branchId },
-        process.env.JWT_SECRET || 'super_secret_enterprise_key_2026',
+        JWT_SECRET,
         { expiresIn: '7d' }
       );
 
@@ -163,7 +134,6 @@ const token = jwt.sign(
       });
     }
 
-    console.log("FAIL: Could not find user or employee with that email.");
     return res.status(401).json({ error: 'Invalid credentials or inactive account.' });
 
   } catch (error: any) {
@@ -172,16 +142,13 @@ const token = jwt.sign(
   }
 };
 
-
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.status(401).json({ error: 'Refresh token required.' });
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'super_secret_enterprise_key_2026') as any;
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as any;
 
-    
-    
     const payload = {
       userId: decoded.userId || decoded.id, 
       id: decoded.userId || decoded.id, 
@@ -190,7 +157,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       branchId: decoded.branchId
     };
 
-    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET || 'super_secret_enterprise_key_2026', { expiresIn: '12h' });
+    const newAccessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
 
     res.status(200).json({ token: newAccessToken });
   } catch (error) {
