@@ -13,12 +13,11 @@ import { getPendingSales } from './services/db';
 import { SalesHistoryModal } from './components/SalesHistoryModal';
 import { CustomerSearchModal } from './components/CustomerSearchModal'; 
 import { useActiveDiscounts } from './hooks/useDiscounts'; 
-
 import { CashManagementModal } from './components/CashManagementModal'; 
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
-  History, Tag, UserPlus, Wallet 
+  History, Tag, UserPlus, Wallet, Package 
 } from 'lucide-react';
 
 const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
@@ -73,7 +72,6 @@ function App() {
   const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  
   
   const [isCashManagementOpen, setIsCashManagementOpen] = useState(false);
   
@@ -164,12 +162,11 @@ function App() {
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden text-gray-900">
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-      <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+        <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-2 font-bold text-xl text-gray-800 tracking-tight shrink-0">Enterprise POS</div>
           <div className="flex items-center gap-2 shrink-0">
             {currentShift && (
               <>
-                {/* NEW: Cash Drop Button (Only shows when shift is active) */}
                 <button onClick={() => setIsCashManagementOpen(true)} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-green-200">
                   <Wallet size={14} /> Cash Drop
                 </button>
@@ -205,19 +202,52 @@ function App() {
           {isLoading ? (
             <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredInventory.map((item) => {
                 const product = item.productId;
                 if (!product) return null;
                 const currentStock = item.quantity ?? 0;
                 const isOutOfStock = currentStock <= 0;
+                
                 return (
-                  <button key={item._id} onClick={() => addItem({ _id: product._id, name: product.name, basePrice: product.basePrice, stock: currentStock })} disabled={isOutOfStock} className={`p-4 rounded-xl shadow-sm border text-left h-32 flex flex-col justify-between transition-all group ${isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed' : 'bg-white border-gray-100 hover:shadow-md hover:border-blue-300 active:bg-blue-50'}`}>
-                    <div className="w-full">
-                      <div className="flex justify-between items-start"><span className="font-medium text-gray-800 line-clamp-1 group-hover:text-blue-600 transition-colors w-[70%]">{product.name}</span><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${currentStock > 10 ? 'bg-green-100 text-green-700' : currentStock > 0 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>{currentStock} left</span></div>
-                      <span className="text-[10px] text-gray-400 font-mono block mt-1">{product.sku}</span>
+                  <button 
+                    key={item._id} 
+                    onClick={() => addItem({ _id: product._id, name: product.name, basePrice: product.basePrice, stock: currentStock })} 
+                    disabled={isOutOfStock} 
+                    className={`rounded-2xl shadow-sm border text-left h-56 flex flex-col overflow-hidden transition-all group ${isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed' : 'bg-white border-gray-100 hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 active:bg-blue-50'}`}
+                  >
+                    {/* IMAGE SECTION */}
+                    <div className="h-32 w-full bg-gray-50 border-b border-gray-100 relative shrink-0 flex items-center justify-center overflow-hidden">
+                      {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.name} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        />
+                      ) : (
+                        <Package size={32} className="text-gray-300" />
+                      )}
+                      
+                      {/* Floating Stock Badge */}
+                      <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm ${currentStock > 10 ? 'bg-white text-green-700' : currentStock > 0 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                        {currentStock} left
+                      </span>
                     </div>
-                    <span className="text-blue-600 font-bold">₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+
+                    {/* DETAILS SECTION */}
+                    <div className="p-3 flex flex-col justify-between flex-1 bg-white">
+                      <div>
+                        <div className="font-bold text-gray-800 line-clamp-1 group-hover:text-blue-600 transition-colors text-sm">
+                          {product.name}
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-mono block mt-0.5">
+                          {product.sku}
+                        </span>
+                      </div>
+                      <span className="text-blue-600 font-black text-sm">
+                        ₱{product.basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </button>
                 );
               })}
@@ -244,22 +274,23 @@ function App() {
           <div className="space-y-3 mb-6 border-b border-gray-200 pb-4">
             <div className="flex justify-between items-center text-sm"><span className="text-gray-500">Subtotal</span><span className="font-semibold text-gray-800">₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
             
-        <div className="pt-2 pb-2">
-          {!selectedCustomer ? (
-            <button onClick={() => setIsCustomerModalOpen(true)} className="w-full flex items-center justify-between p-3 bg-white border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm">
-              <span className="font-medium flex items-center gap-2"><UserPlus size={16} className="text-gray-400 group-hover:text-blue-500" /> Assign Customer (Optional)</span>
-              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold uppercase">Select</span>
-            </button>
-          ) : (
-            <div className="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm transition-all shadow-sm group">
-              <div onClick={() => setIsCustomerModalOpen(true)} className="flex-1 flex flex-col text-left cursor-pointer hover:opacity-80">
-                <span className="text-[10px] font-bold uppercase text-blue-500 tracking-wider mb-0.5">Linked Customer</span>
-                <span className="font-semibold text-blue-900 line-clamp-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</span>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }} className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 rounded-md transition-colors shrink-0" title="Remove Customer (Guest Checkout)"><UserMinus size={18} /></button>
+            <div className="pt-2 pb-2">
+              {!selectedCustomer ? (
+                <button onClick={() => setIsCustomerModalOpen(true)} className="w-full flex items-center justify-between p-3 bg-white border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all shadow-sm">
+                  <span className="font-medium flex items-center gap-2"><UserPlus size={16} className="text-gray-400 group-hover:text-blue-500" /> Assign Customer (Optional)</span>
+                  <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold uppercase">Select</span>
+                </button>
+              ) : (
+                <div className="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm transition-all shadow-sm group">
+                  <div onClick={() => setIsCustomerModalOpen(true)} className="flex-1 flex flex-col text-left cursor-pointer hover:opacity-80">
+                    <span className="text-[10px] font-bold uppercase text-blue-500 tracking-wider mb-0.5">Linked Customer</span>
+                    <span className="font-semibold text-blue-900 line-clamp-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</span>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); setSelectedCustomer(null); }} className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 rounded-md transition-colors shrink-0" title="Remove Customer (Guest Checkout)"><UserMinus size={18} /></button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            
             {activeDiscounts.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-blue-800 mb-1.5 uppercase"><Tag size={12} /> Apply Promotion</label>
@@ -285,7 +316,6 @@ function App() {
       
       {isCloseShiftOpen && <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />}
       
-      {/* NEW: Render Cash Management Modal */}
       {isCashManagementOpen && <CashManagementModal isOpen={isCashManagementOpen} onClose={() => setIsCashManagementOpen(false)} />}
       
       {isCheckoutOpen && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus } from 'lucide-react';
+import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud } from 'lucide-react';
 import { useCreateProduct, useUpdateProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { useCategories, useCreateCategory } from '../api/useCategories'; 
@@ -16,10 +16,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const updateProductMutation = useUpdateProduct();
   const { data: categories = [], isLoading } = useCategories();
   
-  
   const createCategoryMutation = useCreateCategory();
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false); 
 
   const [formData, setFormData] = useState({
     name: '',
@@ -27,7 +27,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     basePrice: '',
     costPrice: '',
     trackInventory: true,
-    categoryId: '' 
+    categoryId: '',
+    imageUrl: '' 
   });
 
   useEffect(() => {
@@ -40,10 +41,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
         trackInventory: productToEdit.trackInventory ?? true,
         categoryId: (typeof productToEdit.categoryId === 'object' && productToEdit.categoryId !== null)
           ? productToEdit.categoryId._id 
-          : (productToEdit.categoryId || '')
+          : (productToEdit.categoryId || ''),
+        imageUrl: productToEdit.imageUrl || '' 
       });
     } else {
-      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '' });
+      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '' });
     }
   }, [productToEdit, isOpen]);
 
@@ -57,11 +59,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     setFormData({ ...formData, sku: `${prefix}-${randomNum}` });
   };
 
-  
   const handleSaveNewCategory = async () => {
     if (!newCategoryName.trim()) return;
     const newCat = await createCategoryMutation.mutateAsync({ name: newCategoryName });
-    
     
     if (newCat && newCat._id) {
       setFormData({ ...formData, categoryId: newCat._id });
@@ -69,6 +69,32 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     
     setIsAddingCategory(false);
     setNewCategoryName('');
+  };
+
+  
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    const data = new FormData();
+    data.append('file', file);
+    data.append('upload_preset', 'pos_products'); 
+    
+    try {
+      
+      const res = await fetch(`https://api.cloudinary.com/v1_1/dwnkryz7g/image/upload`, {
+        method: 'POST',
+        body: data
+      });
+      const fileData = await res.json();
+      setFormData({ ...formData, imageUrl: fileData.secure_url });
+    } catch (error) {
+      console.error("Image upload failed", error);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,7 +105,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       basePrice: Number(formData.basePrice),
       costPrice: Number(formData.costPrice),
       trackInventory: formData.trackInventory,
-      categoryId: formData.categoryId 
+      categoryId: formData.categoryId,
+      imageUrl: formData.imageUrl 
     };
 
     try {
@@ -99,7 +126,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
         
         <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50 shrink-0">
           <div className="flex items-center gap-3">
@@ -120,10 +147,58 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <div className="space-y-1.5 md:col-span-2">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-8">
+          
+          {/* LEFT COLUMN: IMAGE UPLOAD */}
+          <div className="w-full md:w-1/3 space-y-4">
+            <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+              <ImageIcon size={16} className="text-gray-400" /> Product Image
+            </label>
+            <div className="relative group w-full aspect-square border-2 border-dashed border-gray-300 rounded-2xl overflow-hidden flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+              {formData.imageUrl ? (
+                <>
+                  <img src={formData.imageUrl} alt="Product" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white font-bold text-sm flex items-center gap-2">
+                      <UploadCloud size={18} /> Change Image
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center p-4">
+                  {isUploadingImage ? (
+                    <Loader2 size={32} className="mx-auto text-blue-600 animate-spin mb-2" />
+                  ) : (
+                    <>
+                      <UploadCloud size={32} className="mx-auto text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-500 font-medium">Click to upload</span>
+                    </>
+                  )}
+                </div>
+              )}
+              {/* Hidden file input stretching over the whole box */}
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={uploadImage}
+                disabled={isUploadingImage}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+            </div>
+            {formData.imageUrl && (
+              <button 
+                type="button" 
+                onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                className="w-full py-2 text-sm text-red-600 hover:bg-red-50 font-bold rounded-lg transition-colors"
+              >
+                Remove Image
+              </button>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: DETAILS */}
+          <div className="w-full md:w-2/3 space-y-6">
+            <div className="space-y-1.5">
               <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
                 <Tag size={16} className="text-gray-400" /> Product Name
               </label>
@@ -137,8 +212,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               />
             </div>
 
-            {/* --- NEW FEATURE: The Category Block --- */}
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <FolderOpen size={16} className="text-gray-400" /> Category
@@ -150,13 +224,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                     onClick={() => setIsAddingCategory(true)}
                     className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
                   >
-                    <Plus size={14} /> Quick Add Category
+                    <Plus size={14} /> Quick Add
                   </button>
                 )}
               </div>
 
               {isAddingCategory ? (
-                <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100 mt-2">
+                <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
                   <input 
                     type="text" 
                     placeholder="New Category Name..." 
@@ -184,7 +258,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               ) : (
                 <select
                   required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white mt-2"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                   value={formData.categoryId}
                   onChange={e => setFormData({...formData, categoryId: e.target.value})}
                 >
@@ -196,7 +270,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               )}
             </div>
 
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5">
               <label className="text-sm font-bold text-gray-700 flex justify-between items-center">
                 <span className="flex items-center gap-2"><Hash size={16} className="text-gray-400" /> SKU</span>
                 {!isEditMode && (
@@ -216,35 +290,37 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                <DollarSign size={16} className="text-gray-400" /> Base Price (₱)
-              </label>
-              <input 
-                required
-                type="number" 
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.basePrice}
-                onChange={e => setFormData({...formData, basePrice: e.target.value})}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <DollarSign size={16} className="text-gray-400" /> Base Price (₱)
+                </label>
+                <input 
+                  required
+                  type="number" 
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.basePrice}
+                  onChange={e => setFormData({...formData, basePrice: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <DollarSign size={16} className="text-gray-400" /> Cost Price (₱)
+                </label>
+                <input 
+                  required
+                  type="number" 
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.costPrice}
+                  onChange={e => setFormData({...formData, costPrice: e.target.value})}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                <DollarSign size={16} className="text-gray-400" /> Cost Price (₱)
-              </label>
-              <input 
-                required
-                type="number" 
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.costPrice}
-                onChange={e => setFormData({...formData, costPrice: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2 mt-2">
+            <div className="space-y-1.5 pt-2">
               <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                 <input 
                   type="checkbox" 
@@ -260,14 +336,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               </label>
             </div>
           </div>
-
-          <div className="pt-6 border-t border-gray-100 flex justify-end gap-3 mt-8">
-            <button type="button" onClick={onClose} className="px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-            <button type="submit" className="flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
-              {createProductMutation.isPending || updateProductMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : 'Save Product'}
-            </button>
-          </div>
+          
         </form>
+        
+        {/* FOOTER */}
+        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
+          <button type="button" onClick={handleSubmit} disabled={isUploadingImage || createProductMutation.isPending || updateProductMutation.isPending} className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-xl shadow-sm transition-colors">
+            {createProductMutation.isPending || updateProductMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : 'Save Product'}
+          </button>
+        </div>
       </div>
     </div>
   );

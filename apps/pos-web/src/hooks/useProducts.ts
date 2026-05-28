@@ -11,6 +11,7 @@ export interface POSProduct {
     _id: string;
     name: string;
   };
+  imageUrl?: string;
 }
 
 export const usePosProducts = () => {

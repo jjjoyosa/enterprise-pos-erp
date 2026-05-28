@@ -13,6 +13,7 @@ export interface IProduct extends Document {
   hasVariants: boolean;
   status: 'ACTIVE' | 'ARCHIVED';
   stockQuantity: number;
+  imageUrl?: string; 
 }
 
 const ProductSchema = new Schema({
@@ -32,8 +33,8 @@ const ProductSchema = new Schema({
     default: true 
   },
   stockQuantity: { type: Number, default: 0 },
+  imageUrl: { type: String } 
 }, { timestamps: true });
-
 
 ProductSchema.index({ tenantId: 1, sku: 1 }, { unique: true });
 ProductSchema.index(
