@@ -6,12 +6,11 @@ import Inventory from '../../inventory/models/Inventory';
 import Shift from '../models/Shift'; 
 import Batch from '../../inventory/models/Batch'; 
 import Customer from '../../crm/models/Customer';
-
 import { getNextOfficialReceiptNumber } from '../../../utils/receiptGenerator';
+import { logAuditEvent } from '../../audit/services/audit.service'; // <-- NEW AUDIT SERVICE
 
 export const processSale = async (req: Request, res: Response) => {
   try {
-    
     const { items, paymentMethod, discount = 0, customerId, pointsRedeemed = 0 } = req.body;
     const tenantId = (req as any).tenantId; 
     const cashierId = (req as any).userId; 
@@ -49,7 +48,6 @@ export const processSale = async (req: Request, res: Response) => {
       });
     }
 
-    
     const finalTotal = calculatedSubtotal - discount - pointsRedeemed;
     const calculatedTax = finalTotal - (finalTotal / 1.12); 
     const receiptNumber = await getNextOfficialReceiptNumber(tenantId);
@@ -249,9 +247,6 @@ export const processRefund = async (req: Request, res: Response) => {
         notes: refundReason || 'Customer Return'
       });
 
-      
-      
-      
       const activeBatch = await Batch.findOne({
         tenantId,
         productId: refundReq.productId,
@@ -266,7 +261,6 @@ export const processRefund = async (req: Request, res: Response) => {
         await activeBatch.save();
       }
       
-
       await Inventory.findOneAndUpdate(
         { tenantId, productId: refundReq.productId, warehouseId: sale.warehouseId },
         { $inc: { quantity: Math.abs(refundReq.quantity) } }, 
@@ -300,6 +294,21 @@ export const processRefund = async (req: Request, res: Response) => {
     sale.notes = (sale.notes ? sale.notes + ' | ' : '') + `Refunded ${isFullRefund ? 'Fully' : 'Partially'}: ₱${totalRefundAmount} - ${refundReason}`;
     
     await sale.save();
+
+    // --- NEW: WRITE TO IMMUTABLE AUDIT TRAIL ---
+    const authorizedBy = refundReason.includes('(Authorized by') 
+      ? refundReason.split('(Authorized by ')[1].replace(')', '') 
+      : 'System';
+
+    await logAuditEvent({
+      tenantId,
+      actorName: authorizedBy,
+      actorRole: 'MANAGER',
+      actionType: 'VOID_TRANSACTION',
+      targetEntity: 'Sale',
+      targetId: sale._id.toString(),
+      details: `Voided transaction ${sale.receiptNumber} for ₱${totalRefundAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Reason: ${refundReason}`
+    });
 
     res.status(200).json({ message: 'Refund processed successfully and stock restored.', refundAmount: totalRefundAmount, saleStatus: sale.status });
   } catch (error: any) {

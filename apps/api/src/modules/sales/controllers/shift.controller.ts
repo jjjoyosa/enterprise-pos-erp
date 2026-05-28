@@ -4,11 +4,11 @@ import Sale from '../../sales/models/Sale';
 import Warehouse from '../../inventory/models/Warehouse';
 import ZReading from '../models/ZReading';
 import { generateZReadingNumber } from '../../../utils/receiptGenerator';
+import { logAuditEvent } from '../../audit/services/audit.service';
 
 export const openShift = async (req: Request, res: Response) => {
   try {
     const { startingCash } = req.body;
-    
     
     const cashierId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
@@ -67,7 +67,7 @@ export const getCurrentShift = async (req: Request, res: Response) => {
 
 export const recordCashMovement = async (req: Request, res: Response) => {
   try {
-    const { type, amount, reason } = req.body;
+    const { type, amount, reason, managerName } = req.body;
     
     const cashierId = (req as any).user?.id || (req as any).user?.userId || (req as any).userId;
     const tenantId = (req as any).user?.tenantId || (req as any).tenantId;
@@ -82,11 +82,12 @@ export const recordCashMovement = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No open shift found.' });
     }
 
-    const movement = { type, amount, reason, timestamp: new Date() };
     
+    const movement = { type, amount, reason, timestamp: new Date() };
     if (!shift.cashMovements) shift.cashMovements = [];
     shift.cashMovements.push(movement);
 
+    
     if (type === 'PAY_IN') {
       shift.expectedCash += amount;
     } else if (type === 'PAY_OUT') {
@@ -94,6 +95,17 @@ export const recordCashMovement = async (req: Request, res: Response) => {
     }
 
     await shift.save();
+
+    
+    await logAuditEvent({
+      tenantId,
+      actorName: managerName || 'System', 
+      actorRole: 'MANAGER',
+      actionType: type === 'PAY_IN' ? 'CASH_PAY_IN' : 'CASH_PAY_OUT',
+      targetEntity: 'Shift',
+      targetId: shift._id.toString(),
+      details: `Authorized a ${type.replace('_', ' ')} of ₱${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} for reason: "${reason}"`
+    });
 
     res.status(200).json({ message: `Successfully recorded ${type.replace('_', ' ')}`, shift });
   } catch (error: any) {
@@ -116,14 +128,12 @@ export const closeShift = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No open shift to close.' });
     }
     
-    
     const shiftSales = await Sale.find({ 
       tenantId, 
       shiftId: shift._id, 
       status: { $ne: 'REFUNDED' } 
     });
 
-    
     let cashSalesTotal = 0;
     let grossSales = 0;
     let netSales = 0;
@@ -140,7 +150,6 @@ export const closeShift = async (req: Request, res: Response) => {
       }
     });
     
-    
     let totalPayIns = 0;
     let totalPayOuts = 0;
     
@@ -151,14 +160,11 @@ export const closeShift = async (req: Request, res: Response) => {
       });
     }
 
-    
     const expectedCash = (shift.startingCash + cashSalesTotal + totalPayIns) - totalPayOuts;
     const variance = endingCash - expectedCash;
 
-    
     const zReceiptNumber = await generateZReadingNumber(tenantId);
 
-    
     await ZReading.create({
       tenantId,
       shiftId: shift._id,
@@ -176,7 +182,6 @@ export const closeShift = async (req: Request, res: Response) => {
       variance
     });
 
-    
     shift.status = 'CLOSED';
     shift.endTime = new Date();
     shift.expectedCash = expectedCash; 
@@ -190,6 +195,15 @@ export const closeShift = async (req: Request, res: Response) => {
     await shift.save();
 
     
+    await logAuditEvent({
+      tenantId,
+      actorName: 'System', 
+      actorRole: 'SYSTEM',
+      actionType: 'SHIFT_CLOSED',
+      targetEntity: 'ZReading',
+      details: `Shift closed. Expected: ₱${expectedCash.toLocaleString()}. Actual: ₱${endingCash.toLocaleString()}. Variance: ₱${variance.toLocaleString()}`
+    });
+
     res.status(200).json({ 
       message: 'Shift successfully closed and audited Z-Reading archived.', 
       shift,
@@ -206,38 +220,6 @@ export const closeShift = async (req: Request, res: Response) => {
         totalTax,
         totalDiscounts
       }
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const addCashMovement = async (req: Request, res: Response) => {
-  try {
-    const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
-    const { id } = req.params; 
-    const { type, amount, reason, managerName } = req.body;
-
-    const shift = await Shift.findOne({ _id: id, tenantId });
-    if (!shift) {
-      return res.status(404).json({ error: 'Active shift not found.' });
-    }
-
-    const movementAmount = Math.abs(Number(amount));
-
-    
-    shift.expectedCash -= movementAmount;
-
-    
-    const timestamp = new Date().toLocaleTimeString();
-    const logEntry = `[${timestamp}] ${type}: -₱${movementAmount} (${reason}) | Authorized by: ${managerName}`;
-    shift.notes = shift.notes ? `${shift.notes}\n${logEntry}` : logEntry;
-
-    await shift.save();
-
-    res.status(200).json({ 
-      message: 'Cash movement logged successfully.', 
-      expectedCash: shift.expectedCash 
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
