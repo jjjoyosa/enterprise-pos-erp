@@ -211,3 +211,35 @@ export const closeShift = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const addCashMovement = async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
+    const { id } = req.params; 
+    const { type, amount, reason, managerName } = req.body;
+
+    const shift = await Shift.findOne({ _id: id, tenantId });
+    if (!shift) {
+      return res.status(404).json({ error: 'Active shift not found.' });
+    }
+
+    const movementAmount = Math.abs(Number(amount));
+
+    
+    shift.expectedCash -= movementAmount;
+
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${type}: -₱${movementAmount} (${reason}) | Authorized by: ${managerName}`;
+    shift.notes = shift.notes ? `${shift.notes}\n${logEntry}` : logEntry;
+
+    await shift.save();
+
+    res.status(200).json({ 
+      message: 'Cash movement logged successfully.', 
+      expectedCash: shift.expectedCash 
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
