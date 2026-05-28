@@ -3,6 +3,7 @@ import { useSalesHistory } from '../hooks/useSalesHistory';
 import { ReceiptTemplate } from './ReceiptTemplate';
 import { X, Receipt, Printer, Calendar, CreditCard, ChevronDown, ChevronUp, Package, Loader2, RotateCcw, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { api } from '../services/api'; 
+import { ManagerOverrideModal } from './ManagerOverrideModal'; // NEW IMPORT
 
 interface SalesHistoryModalProps {
   onClose: () => void;
@@ -14,10 +15,12 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
   const [saleToPrint, setSaleToPrint] = useState<any>(null);
   
-  
   const [confirmRefundId, setConfirmRefundId] = useState<string | null>(null);
   const [localRefundedIds, setLocalRefundedIds] = useState<string[]>([]); 
   
+  // NEW: State to trigger the Manager PIN Keypad
+  const [saleRequiringOverride, setSaleRequiringOverride] = useState<any>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
@@ -33,8 +36,8 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
     setTimeout(() => setToast(null), 5000); 
   };
 
-  
-  const executeRefund = async (sale: any) => {
+  // UPDATED: Now accepts the managerName from the override modal
+  const executeRefund = async (sale: any, managerName: string) => {
     setIsProcessing(true);
     setToast(null);
 
@@ -45,19 +48,21 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
       }));
 
       await api.post(`/sales/${sale._id}/refund`, {
-        refundReason: "Full transaction void via POS",
+        // Appends the authorizing manager's name to the official database record!
+        refundReason: `Full transaction void via POS (Authorized by ${managerName})`,
         itemsToRefund
       });
 
-      showToast('success', `Receipt #${sale.receiptNumber} was successfully voided.`);
-      
+      showToast('success', `Receipt #${sale.receiptNumber} was successfully voided by ${managerName}.`);
       
       setLocalRefundedIds(prev => [...prev, sale._id]);
       setConfirmRefundId(null); 
+      setSaleRequiringOverride(null); // Close the override modal
 
     } catch (error: any) {
       console.error(error);
       showToast('error', error.response?.data?.error || "Failed to process refund");
+      setSaleRequiringOverride(null); // Close the override modal on error too
     } finally {
       setIsProcessing(false);
     }
@@ -70,6 +75,16 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+      
+      {/* MANAGER OVERRIDE INTERCEPTOR */}
+      {saleRequiringOverride && (
+        <ManagerOverrideModal 
+          actionName="Void Receipt" 
+          onCancel={() => setSaleRequiringOverride(null)}
+          onSuccess={(managerName) => executeRefund(saleRequiringOverride, managerName)}
+        />
+      )}
+
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh] animate-fadeIn">
         
         {/* Header */}
@@ -113,7 +128,6 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
               {sales.map((sale: any) => {
                 const isExpanded = expandedSaleId === sale._id;
                 
-                
                 const displayStatus = localRefundedIds.includes(sale._id) ? 'REFUNDED' : sale.status;
                 const isRefunded = displayStatus === 'REFUNDED' || displayStatus === 'PARTIALLY_REFUNDED';
                 
@@ -146,7 +160,7 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
                       <div className="flex items-center gap-4">
                         {isRefunded && (
                            <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-1 rounded border border-red-200 uppercase tracking-wider">
-                             Voided
+                              Voided
                            </span>
                         )}
                         <span className={`text-lg font-bold ${isRefunded ? 'text-gray-400' : 'text-blue-600'}`}>
@@ -179,9 +193,10 @@ export const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({ onClose })
                                 Cancel
                               </button>
                               <button 
-                                onClick={() => executeRefund(sale)}
+                                // CHANGED: Now triggers the Manager PIN Override instead of executing immediately
+                                onClick={() => setSaleRequiringOverride(sale)}
                                 disabled={isProcessing}
-                                className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 rounded hover:bg-red-700 flex items-center gap-2 transition-colors disabled:opacity-50"
+                                className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 rounded hover:bg-red-700 flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm"
                               >
                                 {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />} 
                                 {isProcessing ? 'Processing...' : 'Yes, Void Receipt'}

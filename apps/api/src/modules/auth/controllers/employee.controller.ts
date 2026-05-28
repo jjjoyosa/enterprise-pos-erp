@@ -3,6 +3,56 @@ import Employee from '../models/Employee';
 import { hashPassword } from '../../../utils/hash'; 
 
 
+import bcrypt from 'bcryptjs';
+
+export const verifyManagerPin = async (req: Request, res: Response) => {
+  try {
+    
+    const tenantId = (req as any).tenantId || (req as any).user?.tenantId;
+    const { pinCode } = req.body;
+
+    if (!pinCode) {
+      return res.status(400).json({ error: 'PIN code is required.' });
+    }
+
+    
+    const authorizedStaff = await Employee.find({ 
+      tenantId, 
+      isActive: true, 
+      role: { $in: ['MANAGER', 'ADMIN'] } 
+    });
+
+    if (authorizedStaff.length === 0) {
+      return res.status(403).json({ error: 'No managers are currently configured for this store.' });
+    }
+
+    
+    let isAuthorized = false;
+    let authorizedUser = null;
+
+    for (const staff of authorizedStaff) {
+      const isMatch = await bcrypt.compare(pinCode, staff.pinCode);
+      if (isMatch) {
+        isAuthorized = true;
+        authorizedUser = staff;
+        break;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(401).json({ error: 'Invalid Manager PIN.' });
+    }
+
+    
+    res.status(200).json({ 
+      message: 'Override authorized.', 
+      authorizedBy: authorizedUser?.name,
+      role: authorizedUser?.role
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 
 export const getEmployees = async (req: Request, res: Response) => {
