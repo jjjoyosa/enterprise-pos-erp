@@ -53,6 +53,7 @@ export const processSale = async (req: Request, res: Response) => {
     const finalTotal = calculatedSubtotal - discount - pointsRedeemed;
     const calculatedTax = finalTotal - (finalTotal / 1.12); 
     const receiptNumber = await getNextOfficialReceiptNumber(tenantId);
+    
     const newSale = await Sale.create({
       tenantId,
       warehouseId, 
@@ -119,7 +120,6 @@ export const processSale = async (req: Request, res: Response) => {
           $inc: { 
             totalVisits: 1, 
             lifetimeValue: finalTotal,
-            
             loyaltyPoints: pointsEarned - pointsRedeemed 
           } 
         }
@@ -231,7 +231,6 @@ export const processRefund = async (req: Request, res: Response) => {
 
     let totalRefundAmount = 0;
 
-    
     for (const refundReq of itemsToRefund) {
       const saleItem = sale.items.find((i: any) => i.productId.toString() === refundReq.productId);
       if (!saleItem) throw new Error(`Product ${refundReq.productId} was not on this receipt`);
@@ -250,6 +249,24 @@ export const processRefund = async (req: Request, res: Response) => {
         notes: refundReason || 'Customer Return'
       });
 
+      
+      
+      
+      const activeBatch = await Batch.findOne({
+        tenantId,
+        productId: refundReq.productId,
+      }).sort({ updatedAt: -1 });
+
+      if (activeBatch) {
+        activeBatch.currentQuantity += Math.abs(refundReq.quantity);
+        
+        if (activeBatch.status === 'DEPLETED' && activeBatch.currentQuantity > 0) {
+          activeBatch.status = 'ACTIVE';
+        }
+        await activeBatch.save();
+      }
+      
+
       await Inventory.findOneAndUpdate(
         { tenantId, productId: refundReq.productId, warehouseId: sale.warehouseId },
         { $inc: { quantity: Math.abs(refundReq.quantity) } }, 
@@ -259,18 +276,13 @@ export const processRefund = async (req: Request, res: Response) => {
 
     const isFullRefund = totalRefundAmount >= sale.total;
 
-    
     await Shift.findOneAndUpdate(
       { _id: sale.shiftId, tenantId },
       { $inc: { expectedCash: -totalRefundAmount } }
     );
 
-    
     if (sale.customerId) {
-      
       const pointsEarned = sale.pointsRedeemed > 0 ? 0 : Math.floor(totalRefundAmount / 100);
-      
-      
       const pointsToReturn = isFullRefund ? sale.pointsRedeemed : 0;
       
       await Customer.findOneAndUpdate(
@@ -283,7 +295,6 @@ export const processRefund = async (req: Request, res: Response) => {
         }
       );
     }
-
     
     sale.status = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
     sale.notes = (sale.notes ? sale.notes + ' | ' : '') + `Refunded ${isFullRefund ? 'Fully' : 'Partially'}: ₱${totalRefundAmount} - ${refundReason}`;

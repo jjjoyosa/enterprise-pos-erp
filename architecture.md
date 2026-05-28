@@ -971,75 +971,68 @@ That list is essentially the **complete functional scope** of an enterprise POS/
 
 
 
+🗺️ The Master Enterprise Blueprint (Version 3.0)
+🛠️ Sprint 6: Stabilization, UX & Core CRUD (Immediate Next Step)
+Patching the holes and polishing the core before scaling.
 
+Action 1: The Refund Sync Bug. Fix the inventory backend to accurately restock specific batches upon a void/refund.
 
+Action 2: Cache & UI Snappiness. Fix the React Query invalidations so voided sales visually update instantly on the POS frontend.
 
+Action 3: Complete the CRUD. Add Edit/Delete modals for Staff and Suppliers in the Admin web app.
 
-The Upgraded Enterprise Blueprint
-Sprint 1: Master Data & Foundation (✅ COMPLETED)
-Action 1: System Core (Basic Auth, Sessions, Tenant ID injection).
+Action 4: Product Images. Add image upload support to the catalog and render them in the POS cart grid.
 
-Action 2: Product Management (CRUD Catalog, Variants, Categories).
+🛡️ Sprint 7: Manager Tools & Deep Security
+Giving managers power, tracking their moves, and hiding what cashiers shouldn't see.
 
-Action 3: Basic Inventory Tracking (Stock Levels, Simple Warehouses).
+Action 1: Mid-Shift Manager Dashboard. A modal in the POS where managers can see live drawer expectations and authorize payouts.
 
-Action 4: The POS Terminal Shell (Cart, Scanner UI).
+Action 2: Manager PIN Overrides. The keypad modal blocking cashiers from issuing refunds without a 4-digit PIN.
 
-Sprint 2: The Money Engine (📍 WE ARE HERE - Finishing Up)
-Action 1: Transaction Engine & Real-Time Stock Deduction (✅ Completed).
+Action 3: Frontend RBAC (UI Guardrails). Build a <RoleGuard> React component that physically hides buttons, routes, and modules (like Analytics or Settings) from unauthorized users across both admin-web and pos-web.
 
-Action 2: Enterprise Checkout Payload & Offline Fallback (✅ Completed).
+Action 4: The Audit Trail. The immutable AuditLog backend collection tracking exactly who changed what.
 
-Action 3: Admin Sales Ledger & Digital Receipts (✅ Completed).
+🍔 Sprint 8: F&B Engine (Bill of Materials) & Purchasing
+Advanced inventory mechanics for restaurants and manufacturing.
 
-Action 4: The Refund Engine: Partial/Full refunds, voiding, and auto-restocking items.
+Action 1: Recipe / BOM Engine. Allow products to be composed of raw ingredients (e.g., selling 1 Burger deducts 1 Bun, 1 Patty).
 
-Action 5: Advanced Discounts & Promos: % based, amount based, Buy-X-Get-Y, and campaign time-windows.
+Action 2: Supplier Returns (RMA). Workflow to return damaged goods back to suppliers and adjust accounts payable.
 
-Action 6: Cash Management (Shift/Register): Open/Close drawer, Cash In/Out, and discrepancy tracking.
+Action 3: Low-Stock Auto-PO. System-generated drafted Purchase Orders when stock hits critical thresholds.
 
-Sprint 3: Supply Chain & Purchasing
-Action 1: Supplier Management: CRUD Suppliers, terms, and contact profiles.
+📈 Sprint 9: Advanced Analytics & Dashboard
+Giving the business owner a "God View" of operations.
 
-Action 2: Purchase Orders (POs): Draft, approve, and send orders to vendors.
+Action 1: The Executive Dashboard. Admin charts showing Gross Sales, Net Profit, and Revenue (Today, Weekly, Monthly, All-Time).
 
-Action 3: Receiving Workflow: Accept deliveries, handle variances, and automatically generate Supplier Bills.
+Action 2: ABC Analysis. Automatically identifying the top-selling items (A) vs. dead stock (C).
 
-Action 4: Advanced Inventory: Cycle counting, batch/expiration tracking, and inter-branch transfers.
+Action 3: Export Engine. CSV bulk downloads for sales histories and inventory levels.
 
-Sprint 4: CRM & Customer Loyalty
-Action 1: Customer Profiles: Purchase history, addresses, and customer groups (Retail vs. VIP).
+⚖️ Sprint 10: The Double-Entry Accounting Core
+The bridge from POS to ERP.
 
-Action 2: Loyalty Engine: Reward points calculation, tier upgrades, and point redemption.
+Action 1: Chart of Accounts. Standard ledgers (Cash, AP, AR, Inventory Asset, COGS, Sales Revenue).
 
-Action 3: Store Credit & AR: Allowing customers to buy on credit, tracking balances, and settling accounts.
+Action 2: Automated Journal Entries. Every POS sale and PO receipt auto-balances the ledgers.
 
-Sprint 5: BIR Compliance & Accounting (Crucial for PH)
-Action 1: Chart of Accounts: Ledgers, Trial Balances, and automated journal entries triggered by POS sales and PO receipts.
+Action 3: Dynamic Tax Engine. Handling VAT, VAT-Exempt, and Zero-Rated scenarios seamlessly at checkout.
 
-Action 2: BIR Numbering Engine: Sequential, gapless receipt numbering, and invoice generation with TIN routing.
+🏛️ Sprint 11: Complete CRM, HR & Compliance Finalization
+The operational polish.
 
-Action 3: Tax & Sales Books: Generating compliant VAT reports, Z-Readings (EOD), and Sales/Purchase books.
+Action 1: HR & Timekeeping. Employee clock-in/out and payroll calculation.
 
-Sprint 6: Multi-Branch & Advanced RBAC
-Action 1: Branch Hierarchy: Creating sub-branches under a parent company, ensuring strict data isolation per branch.
+Action 2: Store Credit & Advanced Loyalty. Allowing refunds to store credit and tiered loyalty points.
 
-Action 2: Granular Permissions (RBAC): Creating custom roles (e.g., "Cashier", "Manager", "Auditor") mapped to exact CRUD capabilities.
+Action 3: BIR Book Generation. Generating the official CSV/DAT files for Sales and Purchase books for strict audit compliance.
 
-Action 3: Employee Management: Shift scheduling, attendance, time logging, and basic commission tracking.
+📱 Sprint 12: The Universal PWA & Final Polish
+Making the system feel like a native app on any device.
 
-Sprint 7: Data Tools, Automation & Audit
-Action 1: The Audit System: Immutable logs tracking who changed what and when (Before/After states).
+Action 1: Omnichannel Responsiveness. Implementing strict Tailwind breakpoints so the POS looks perfect on an iPad Mini, a 1080p touch monitor, or a mobile phone.
 
-Action 2: Import / Export Engine: CSV/Excel uploading for bulk product updates and downloading financial reports.
-
-Action 3: Workflow & Notifications: Approval chains for large POs, and Email/SMS webhooks for alerts.
-
-Action 4: Offline Sync Queue: Advanced conflict resolution for when the POS reconnects after a long outage.
-
-Sprint 8: Enterprise Analytics & AI
-Action 1: Advanced Dashboards: ABC Analysis, gross margin tracking, and branch-by-branch comparisons.
-
-Action 2: Low Stock & Expiration Alerts: Push notifications for critical supply chain events.
-
-Action 3: AI Hooks (Optional): Demand forecasting and natural language database search.
+Action 2: Progressive Web App (PWA) Conversion. Adding manifest.json and Service Workers to pos-web and admin-web so they can be installed directly to the home screen and cache all static assets for zero-latency booting.
