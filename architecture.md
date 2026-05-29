@@ -970,70 +970,50 @@ That list is essentially the **complete functional scope** of an enterprise POS/
 
 
 
-🗺️ The Master Enterprise Blueprint (Version 3.1)
-✅ Sprint 6: Stabilization, UX & Core CRUD [COMPLETED]
-Patching the holes and polishing the core before scaling.
+🗺️ The Master Enterprise Blueprint (Version 4.1)
+📦 Sprint 9: Manager Controls & Procurement UI (Immediate Next Step)
+Bridging the gap between the POS drawer, the Auto-PO backend, and physical warehouse operations.
 
-Action 1: The Refund Sync Bug. Fix the inventory backend to accurately restock specific batches upon a void/refund.
+Action 1: Mid-Shift Manager Dashboard (UI): Building the React modal in the POS where managers can view the live drawer expectations (which your backend is already calculating) and authorize cash payouts.
 
-Action 2: Cache & UI Snappiness. Fix the React Query invalidations so voided sales visually update instantly on the POS frontend.
+Action 2: Supplier Directory: A simple CRUD page in the Admin Web to manage vendors, contact info, and lead times.
 
-Action 3: Complete the CRUD. Add Edit/Delete modals for Staff and Suppliers in the Admin web app.
+Action 3: The PO Dashboard: A UI where managers can view the DRAFT Purchase Orders our engine generates, edit quantities/prices, and click "Approve".
 
-Action 4: Product Images. Add image upload support to the catalog and render them in the POS cart grid.
+Action 4: Goods Receipt Note (GRN): A workflow to "Receive" the PO. When the supplier delivers the goods, the manager clicks "Receive," which automatically injects the physical stock into the warehouse ledger.
 
-🛡️ Sprint 7: Manager Tools, UX & Deep Security (Immediate Next Step)
-Giving managers power, organizing the cashier view, tracking moves, and hiding what cashiers shouldn't see.
-
-Action 1: POS Category Tabs & Advanced Filters. Add horizontal category tabs above the POS grid and enhance the search/filter logic for lightning-fast checkout.
-
-Action 2: Manager PIN Overrides. The keypad modal blocking cashiers from issuing refunds or voiding transactions without a 4-digit Manager/Admin PIN.
-
-Action 3: Mid-Shift Manager Dashboard. A modal in the POS where managers can see live drawer expectations and authorize payouts.
-
-Action 4: Frontend RBAC (UI Guardrails). Build a <RoleGuard> React component that physically hides buttons, routes, and modules (like Analytics or Settings) from unauthorized users across both admin-web and pos-web.
-
-Action 5: The Audit Trail. The immutable AuditLog backend collection tracking exactly who changed what.
-
-🍔 Sprint 8: F&B Engine (Bill of Materials) & Purchasing
-Advanced inventory mechanics for restaurants and manufacturing.
-
-Action 1: Recipe / BOM Engine. Allow products to be composed of raw ingredients (e.g., selling 1 Burger deducts 1 Bun, 1 Patty).
-
-Action 2: Supplier Returns (RMA). Workflow to return damaged goods back to suppliers and adjust accounts payable.
-
-Action 3: Low-Stock Auto-PO. System-generated drafted Purchase Orders when stock hits critical thresholds.
-
-📈 Sprint 9: Advanced Analytics & Dashboard
+📈 Sprint 10: Advanced Analytics & Dashboard
 Giving the business owner a "God View" of operations.
 
-Action 1: The Executive Dashboard. Admin charts showing Gross Sales, Net Profit, and Revenue (Today, Weekly, Monthly, All-Time).
+Action 1: The Executive Dashboard: Admin charts showing Gross Sales, Net Profit, and Revenue (Today, Weekly, Monthly, All-Time).
 
-Action 2: ABC Analysis. Automatically identifying the top-selling items (A) vs. dead stock (C).
+Action 2: ABC Analysis: Automatically identifying the top-selling items (A) vs. dead stock (C).
 
-Action 3: Export Engine. CSV bulk downloads for sales histories and inventory levels.
+Action 3: Export Engine: CSV bulk downloads for sales histories and inventory levels.
 
-⚖️ Sprint 10: The Double-Entry Accounting Core
-The bridge from POS to ERP.
+⚖️ Sprint 11: The Double-Entry Accounting Core
+The bridge from POS to Corporate Finance.
 
-Action 1: Chart of Accounts. Standard ledgers (Cash, AP, AR, Inventory Asset, COGS, Sales Revenue).
+Action 1: Chart of Accounts: Standard ledgers (Cash, AP, AR, Inventory Asset, COGS, Sales Revenue).
 
-Action 2: Automated Journal Entries. Every POS sale and PO receipt auto-balances the ledgers.
+Action 2: Automated Journal Entries: Every POS sale and PO receipt automatically balances the ledgers in the background.
 
-Action 3: Dynamic Tax Engine. Handling VAT, VAT-Exempt, and Zero-Rated scenarios seamlessly at checkout.
+Action 3: Dynamic Tax Engine: Handling VAT, VAT-Exempt, and Zero-Rated scenarios seamlessly at checkout.
 
-🏛️ Sprint 11: Complete CRM, HR & Compliance Finalization
-The operational polish.
+🏛️ Sprint 12: Complete CRM, HR & Compliance
+The operational polish for real-world business.
 
-Action 1: HR & Timekeeping. Employee clock-in/out and payroll calculation.
+Action 1: HR & Timekeeping: Employee clock-in/out and payroll calculation.
 
-Action 2: Store Credit & Advanced Loyalty. Allowing refunds to store credit and tiered loyalty points.
+Action 2: Store Credit & Advanced Loyalty: Allowing refunds to store credit and tiered loyalty points.
 
-Action 3: BIR Book Generation. Generating the official CSV/DAT files for Sales and Purchase books for strict audit compliance.
+Action 3: BIR Book Generation: Generating the official CSV/DAT files for Sales and Purchase books for strict audit compliance.
 
-📱 Sprint 12: The Universal PWA & Final Polish
+📱 Sprint 13: The Universal PWA, Security & Final Polish
 Making the system feel like a native app on any device.
 
-Action 1: Omnichannel Responsiveness. Implementing strict Tailwind breakpoints so the POS looks perfect on an iPad Mini, a 1080p touch monitor, or a mobile phone.
+Action 1: Omnichannel Responsiveness: Implementing strict Tailwind breakpoints so the POS looks perfect on an iPad Mini, a 1080p touch monitor, or a mobile phone.
 
-Action 2: Progressive Web App (PWA) Conversion. Adding manifest.json and Service Workers to pos-web and admin-web so they can be installed directly to the home screen and cache all static assets for zero-latency booting.
+Action 2: Progressive Web App (PWA) Conversion: Adding manifest.json and Service Workers to pos-web and admin-web so they can be installed directly to the home screen for zero-latency booting.
+
+Action 3: Security Hardening: A final sweep of route protections, error boundaries, and API rate-limiting before production deployment.

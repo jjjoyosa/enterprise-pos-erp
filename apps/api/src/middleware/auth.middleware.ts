@@ -30,9 +30,6 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     const userId = decoded.userId || decoded.id;
     const tenantId = decoded.tenantId;
 
-    
-    console.log("MIDDLEWARE: Decoded Token Payload ->", decoded);
-    console.log("MIDDLEWARE: Extracted TenantID ->", tenantId);
 
     if (!userId || !tenantId) {
       return res.status(401).json({ error: 'Unauthorized: Missing identity or tenant context inside token' });
