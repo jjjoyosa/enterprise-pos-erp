@@ -7,7 +7,8 @@ import Shift from '../models/Shift';
 import Batch from '../../inventory/models/Batch'; 
 import Customer from '../../crm/models/Customer';
 import { getNextOfficialReceiptNumber } from '../../../utils/receiptGenerator';
-import { logAuditEvent } from '../../audit/services/audit.service'; // <-- NEW AUDIT SERVICE
+import { logAuditEvent } from '../../audit/services/audit.service'; 
+import Recipe from '../../products/models/Recipe'; 
 
 export const processSale = async (req: Request, res: Response) => {
   try {
@@ -68,44 +69,69 @@ export const processSale = async (req: Request, res: Response) => {
       paymentMethod
     });
 
+    
     for (const item of processedItems) {
-      await StockMovement.create({
-        tenantId,
+      
+      const recipe = await Recipe.findOne({ tenantId, productId: item.productId });
+      const itemsToDeduct = [];
+
+      
+      itemsToDeduct.push({
         productId: item.productId,
-        warehouseId,
-        type: 'OUT',
-        quantity: -Math.abs(item.quantity),
-        reference: newSale.receiptNumber,
+        quantity: item.quantity,
         notes: 'POS Sale'
       });
 
-      let remainingQtyToDeduct = item.quantity;
       
-      const activeBatches = await Batch.find({
-        tenantId,
-        productId: item.productId,
-        status: 'ACTIVE'
-      }).sort({ expirationDate: 1, createdAt: 1 }); 
-
-      for (const batch of activeBatches) {
-        if (remainingQtyToDeduct <= 0) break;
-
-        if (batch.currentQuantity <= remainingQtyToDeduct) {
-          remainingQtyToDeduct -= batch.currentQuantity;
-          batch.currentQuantity = 0;
-          batch.status = 'DEPLETED';
-        } else {
-          batch.currentQuantity -= remainingQtyToDeduct;
-          remainingQtyToDeduct = 0;
+      if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
+        for (const ingredient of recipe.ingredients) {
+          itemsToDeduct.push({
+            productId: ingredient.materialProductId,
+            quantity: ingredient.quantity * item.quantity,
+            notes: `POS Sale Component (${item.productId})`
+          });
         }
-        await batch.save();
       }
 
-      await Inventory.findOneAndUpdate(
-        { tenantId, productId: item.productId, warehouseId },
-        { $inc: { quantity: -Math.abs(item.quantity) } },
-        { new: true, upsert: true }
-      );
+      for (const target of itemsToDeduct) {
+        await StockMovement.create({
+          tenantId,
+          productId: target.productId,
+          warehouseId,
+          type: 'OUT',
+          quantity: -Math.abs(target.quantity),
+          reference: newSale.receiptNumber,
+          notes: target.notes
+        });
+
+        let remainingQtyToDeduct = target.quantity;
+        
+        const activeBatches = await Batch.find({
+          tenantId,
+          productId: target.productId,
+          status: 'ACTIVE'
+        }).sort({ expirationDate: 1, createdAt: 1 }); 
+
+        for (const batch of activeBatches) {
+          if (remainingQtyToDeduct <= 0) break;
+
+          if (batch.currentQuantity <= remainingQtyToDeduct) {
+            remainingQtyToDeduct -= batch.currentQuantity;
+            batch.currentQuantity = 0;
+            batch.status = 'DEPLETED';
+          } else {
+            batch.currentQuantity -= remainingQtyToDeduct;
+            remainingQtyToDeduct = 0;
+          }
+          await batch.save();
+        }
+
+        await Inventory.findOneAndUpdate(
+          { tenantId, productId: target.productId, warehouseId },
+          { $inc: { quantity: -Math.abs(target.quantity) } },
+          { new: true, upsert: true }
+        );
+      }
     }
     
     let pointsEarned = 0;
@@ -295,7 +321,6 @@ export const processRefund = async (req: Request, res: Response) => {
     
     await sale.save();
 
-    // --- NEW: WRITE TO IMMUTABLE AUDIT TRAIL ---
     const authorizedBy = refundReason.includes('(Authorized by') 
       ? refundReason.split('(Authorized by ')[1].replace(')', '') 
       : 'System';

@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import { 
   createCategory, 
@@ -6,12 +5,13 @@ import {
   getProducts, 
   deleteProduct, 
   updateProduct, 
-  getCategories 
+  getCategories,
+  getRecipe,       
+  upsertRecipe     
 } from '../controllers/product.controller';
 import { requireAuth } from '../../../middleware/auth.middleware';
 
 const router = Router();
-
 
 router.use(requireAuth);
 
@@ -20,11 +20,15 @@ router.get('/categories', getCategories);
 router.post('/categories', createCategory);
 
 
-router.delete('/:id', deleteProduct);
-router.patch('/:id', updateProduct);
-
-
 router.get('/', getProducts);
 router.post('/', createProduct);
+
+
+router.get('/:productId/recipe', getRecipe);
+router.post('/:productId/recipe', upsertRecipe);
+
+
+router.delete('/:id', deleteProduct);
+router.patch('/:id', updateProduct);
 
 export default router;

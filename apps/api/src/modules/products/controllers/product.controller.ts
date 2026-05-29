@@ -5,6 +5,52 @@ import Product from '../models/Product';
 import Inventory from '../../inventory/models/Inventory'; 
 import Warehouse from '../../inventory/models/Warehouse'; 
 
+import Recipe from '../models/Recipe';
+
+
+export const getRecipe = async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const { productId } = req.params;
+
+    const recipe = await Recipe.findOne({ tenantId, productId })
+      .populate('ingredients.materialProductId', 'name sku basePrice');
+
+    if (!recipe) {
+      return res.status(404).json({ message: 'No recipe found for this product' });
+    }
+
+    res.status(200).json(recipe);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+export const upsertRecipe = async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const { productId } = req.params;
+    const { ingredients } = req.body;
+
+    if (!ingredients || ingredients.length === 0) {
+      
+      await Recipe.findOneAndDelete({ tenantId, productId });
+      return res.status(200).json({ message: 'Recipe removed. Item is now a standard retail product.' });
+    }
+
+    const recipe = await Recipe.findOneAndUpdate(
+      { tenantId, productId },
+      { ingredients },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({ message: 'Recipe saved successfully', recipe });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const createCategory = async (req: Request, res: Response) => {
   try {
     const { name, description } = req.body;
