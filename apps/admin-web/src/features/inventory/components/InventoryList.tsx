@@ -2,12 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { useInventoryLevels } from '../api/useInventory';
 import type { InventoryLevel } from '../api/useInventory';
 import { AdjustStockModal } from './AdjustStockModal';
-import { Search, Package, AlertTriangle } from 'lucide-react';
+import { SupplierReturnModal } from './SupplierReturnModal'; 
+import { Search, AlertTriangle, ArrowLeftRight } from 'lucide-react';
 
 export const InventoryList = () => {
   const { data: inventory = [], isLoading, isError } = useInventoryLevels();
+  
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState<InventoryLevel | null>(null);
+  
+  
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [selectedForReturn, setSelectedForReturn] = useState<InventoryLevel | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState('');
 
   const processedInventory = useMemo(() => {
@@ -46,6 +54,11 @@ export const InventoryList = () => {
   const handleAdjustClick = (item: InventoryLevel) => {
     setSelectedInventory(item);
     setIsModalOpen(true);
+  };
+
+  const handleReturnClick = (item: InventoryLevel) => {
+    setSelectedForReturn(item);
+    setIsReturnModalOpen(true);
   };
 
   return (
@@ -91,11 +104,12 @@ export const InventoryList = () => {
             ) : (
               processedInventory.map((item) => {
                 const isArchived = (item.productId as any)?.isActive === false;
+                const hasNoStock = item.quantity <= 0;
+                
                 return (
                   <tr key={item.productId?._id || item._id} className={`transition-colors text-sm ${isArchived ? 'bg-gray-50 opacity-60' : 'hover:bg-blue-50/50'}`}>
                     <td className="p-4 pl-6">
                       <div className="flex items-center gap-3">
-                        
                         <div>
                           <div className={`font-bold ${isArchived ? 'text-gray-500' : 'text-gray-900'}`}>
                             {item.productId?.name || 'Unknown Product'}
@@ -117,14 +131,27 @@ export const InventoryList = () => {
                         {item.quantity} units
                       </span>
                     </td>
-                    <td className="p-4 pr-6 text-center">
-                      <button 
-                        onClick={() => handleAdjustClick(item)}
-                        disabled={isArchived}
-                        className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
-                      >
-                        Adjust
-                      </button>
+                    <td className="p-4 pr-6">
+                      <div className="flex justify-center gap-2">
+                        {/* RMA BUTTON */}
+                        <button 
+                          onClick={() => handleReturnClick(item)}
+                          disabled={isArchived || hasNoStock}
+                          title="Return to Supplier (RMA)"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-bold hover:bg-red-100 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ArrowLeftRight size={14} /> RMA
+                        </button>
+
+                        {/* ADJUST BUTTON */}
+                        <button 
+                          onClick={() => handleAdjustClick(item)}
+                          disabled={isArchived}
+                          className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Adjust
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -134,6 +161,7 @@ export const InventoryList = () => {
         </table>
       </div>
 
+      {/* ADJUST STOCK MODAL */}
       {isModalOpen && selectedInventory && (
         <AdjustStockModal 
           inventoryItem={selectedInventory} 
@@ -143,6 +171,17 @@ export const InventoryList = () => {
           }} 
         />
       )}
+
+      {/* SUPPLIER RETURN MODAL */}
+      <SupplierReturnModal 
+        isOpen={isReturnModalOpen}
+        onClose={() => {
+          setIsReturnModalOpen(false);
+          setSelectedForReturn(null);
+        }}
+        inventoryItem={selectedForReturn}
+      />
+
     </div>
   );
 };

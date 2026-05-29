@@ -50,6 +50,8 @@ export const useInventoryLevels = () => {
       const { data } = await api.get('/inventory?includeArchived=true');
       return data;
     },
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 };
 
