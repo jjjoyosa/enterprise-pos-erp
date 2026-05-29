@@ -14,6 +14,7 @@ export interface IProduct extends Document {
   status: 'ACTIVE' | 'ARCHIVED';
   stockQuantity: number;
   imageUrl?: string; 
+  supplierId?: mongoose.Types.ObjectId;
 }
 
 const ProductSchema = new Schema({
@@ -33,7 +34,8 @@ const ProductSchema = new Schema({
     default: true 
   },
   stockQuantity: { type: Number, default: 0 },
-  imageUrl: { type: String } 
+  imageUrl: { type: String } ,
+  supplierId: { type: Schema.Types.ObjectId, ref: 'Supplier', required: false },
 }, { timestamps: true });
 
 ProductSchema.index({ tenantId: 1, sku: 1 }, { unique: true });

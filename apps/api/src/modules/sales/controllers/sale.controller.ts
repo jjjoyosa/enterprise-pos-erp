@@ -9,6 +9,7 @@ import Customer from '../../crm/models/Customer';
 import { getNextOfficialReceiptNumber } from '../../../utils/receiptGenerator';
 import { logAuditEvent } from '../../audit/services/audit.service'; 
 import Recipe from '../../products/models/Recipe'; 
+import { checkAndDraftPO } from '../../purchasing/services/autoPurchasing.service';
 
 export const processSale = async (req: Request, res: Response) => {
   try {
@@ -126,11 +127,15 @@ export const processSale = async (req: Request, res: Response) => {
           await batch.save();
         }
 
-        await Inventory.findOneAndUpdate(
+        const updatedInv = await Inventory.findOneAndUpdate(
           { tenantId, productId: target.productId, warehouseId },
           { $inc: { quantity: -Math.abs(target.quantity) } },
           { new: true, upsert: true }
         );
+
+        if (updatedInv) {
+          checkAndDraftPO(tenantId.toString(), target.productId.toString(), updatedInv.quantity);
+        }
       }
     }
     
