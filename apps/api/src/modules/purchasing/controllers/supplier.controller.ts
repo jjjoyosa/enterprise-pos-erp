@@ -19,7 +19,8 @@ export const createSupplier = async (req: Request, res: Response) => {
     const tenantId = (req as any).tenantId;
     if (!tenantId) return res.status(401).json({ error: 'Unauthorized: Tenant missing' });
 
-    const { name, contactPerson, email, phone, address, tin, paymentTerms, notes } = req.body;
+    const { name, contactPerson, email, phone, address, tin, paymentTerms, notes, leadTimeDays, // <-- Save it to DB
+      currency } = req.body;
 
     const existing = await Supplier.findOne({ tenantId, name: { $regex: new RegExp(`^${name}$`, 'i') } });
     if (existing) {
@@ -27,7 +28,8 @@ export const createSupplier = async (req: Request, res: Response) => {
     }
 
     const newSupplier = await Supplier.create({
-      tenantId, name, contactPerson, email, phone, address, tin, paymentTerms, notes, isActive: true
+      tenantId, name, contactPerson, email, phone, address, tin, paymentTerms, notes, leadTimeDays, // <-- Save it to DB
+      currency, isActive: true
     });
 
     res.status(201).json(newSupplier);

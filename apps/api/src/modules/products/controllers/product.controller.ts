@@ -78,8 +78,6 @@ export const createProduct = async (req: Request, res: Response) => {
     await newProduct.save();
     
     
-    
-    
     if (newProduct.trackInventory) {
       
       const defaultWarehouse = await Warehouse.findOne({ tenantId, isDefault: true }) 
@@ -155,12 +153,12 @@ export const updateProduct = async (req: Request, res: Response) => {
     const { id } = req.params;
     
     
-    const { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable } = req.body;
+    const { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable, supplierId } = req.body;
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: id, tenantId: req.tenantId },
       
-      { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable },
+      { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable, supplierId },
       { new: true }
     );
 

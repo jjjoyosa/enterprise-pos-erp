@@ -8,18 +8,17 @@ export interface Product {
   basePrice: number;
   costPrice: number;
   trackInventory: boolean;
-  categoryId?: string |  {
+  categoryId?: string | {
     _id: string;
     name: string;
   };
   imageUrl?: string; 
   type?: 'STANDARD' | 'RAW_MATERIAL'; 
-  isSellable?: boolean; 
+  isSellable?: boolean;
+  supplierId?: string | { _id: string; name: string }; // <-- NEW
 }
 
-
 const fetchProducts = async (): Promise<Product[]> => {
-  
   const { data } = await api.get('/products?includeArchived=true');
   return data;
 };
@@ -39,8 +38,6 @@ const deleteProduct = async (id: string) => {
   return response.data;
 };
 
-
-
 export const useProducts = () => {
   return useQuery({
     queryKey: ['products'], 
@@ -48,37 +45,31 @@ export const useProducts = () => {
   });
 };
 
-
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createProduct,
     onSuccess: () => {
-      
       queryClient.invalidateQueries({ queryKey: ['products'] }); 
     },
   });
 };
-
 
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateProduct,
     onSuccess: () => {
-      
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
 };
-
 
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
-      
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });

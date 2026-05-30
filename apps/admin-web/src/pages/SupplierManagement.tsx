@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from '../hooks/useSuppliers';
-import { Plus, Truck, Building2, Phone, Mail, Loader2, X, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Truck, Building2, Phone, Mail, Loader2, X, Edit, Trash2, AlertCircle, Clock } from 'lucide-react';
 
 export const SupplierManagement = () => {
   const { data: suppliers, isLoading } = useSuppliers();
@@ -13,12 +13,12 @@ export const SupplierManagement = () => {
   const [supplierToDelete, setSupplierToDelete] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    name: '', contactPerson: '', email: '', phone: '', tin: '', paymentTerms: 'CASH'
+    name: '', contactPerson: '', email: '', phone: '', tin: '', paymentTerms: 'CASH', leadTimeDays: 3, currency: 'PHP'
   });
 
   const openCreateForm = () => {
     setEditingSupplier(null);
-    setFormData({ name: '', contactPerson: '', email: '', phone: '', tin: '', paymentTerms: 'CASH' });
+    setFormData({ name: '', contactPerson: '', email: '', phone: '', tin: '', paymentTerms: 'CASH', leadTimeDays: 3, currency: 'PHP' });
     setIsModalOpen(true);
   };
 
@@ -30,7 +30,9 @@ export const SupplierManagement = () => {
       email: supplier.email || '', 
       phone: supplier.phone || '', 
       tin: supplier.tin || '', 
-      paymentTerms: supplier.paymentTerms || 'CASH' 
+      paymentTerms: supplier.paymentTerms || 'CASH',
+      leadTimeDays: supplier.leadTimeDays || 3,
+      currency: supplier.currency || 'PHP'
     });
     setIsModalOpen(true);
   };
@@ -104,6 +106,7 @@ export const SupplierManagement = () => {
                 <th className="p-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Supplier Details</th>
                 <th className="p-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Contact Info</th>
                 <th className="p-4 font-bold text-gray-500 uppercase tracking-wider text-xs">TIN</th>
+                <th className="p-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Operations</th>
                 <th className="p-4 font-bold text-gray-500 uppercase tracking-wider text-xs">Payment Terms</th>
                 <th className="p-4 font-bold text-gray-500 uppercase tracking-wider text-xs text-right pr-6">Actions</th>
               </tr>
@@ -111,7 +114,7 @@ export const SupplierManagement = () => {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center">
+                  <td colSpan={6} className="p-8 text-center">
                     <div className="flex flex-col items-center justify-center text-blue-600">
                       <Loader2 className="animate-spin mb-2" size={24} />
                       <span className="text-gray-500 text-sm font-medium">Loading suppliers...</span>
@@ -120,7 +123,7 @@ export const SupplierManagement = () => {
                 </tr>
               ) : suppliers?.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-500 font-medium">
+                  <td colSpan={6} className="p-8 text-center text-gray-500 font-medium">
                     No suppliers found. Click "Add New Supplier" to get started.
                   </td>
                 </tr>
@@ -145,12 +148,22 @@ export const SupplierManagement = () => {
                     </td>
                     <td className="p-4 font-mono text-xs text-gray-500">{supplier.tin || 'N/A'}</td>
                     <td className="p-4">
-                      <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold border border-gray-200">
-                        {supplier.paymentTerms.replace('_', ' ')}
-                      </span>
+                       <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium bg-gray-100 w-fit px-2 py-1 rounded border border-gray-200">
+                         <Clock size={12} className="text-gray-500"/> 
+                         {supplier.leadTimeDays || 3} Days
+                       </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="w-fit px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold border border-gray-200">
+                          {supplier.paymentTerms.replace('_', ' ')}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-400 ml-1">
+                          CURRENCY: {supplier.currency || 'PHP'}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-4 pr-6 text-right">
-                      {/* Permanently visible action buttons */}
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => openEditForm(supplier)}
@@ -214,6 +227,22 @@ export const SupplierManagement = () => {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Phone Number</label>
                   <input placeholder="+63 900 000 0000" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Lead Time (Days) *</label>
+                  <input type="number" min="0" required value={formData.leadTimeDays} onChange={e => setFormData({...formData, leadTimeDays: Number(e.target.value)})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Currency</label>
+                  <select value={formData.currency} onChange={e => setFormData({...formData, currency: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 outline-none transition-all bg-white">
+                    <option value="PHP">PHP (₱)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="JPY">JPY (¥)</option>
+                  </select>
                 </div>
               </div>
 

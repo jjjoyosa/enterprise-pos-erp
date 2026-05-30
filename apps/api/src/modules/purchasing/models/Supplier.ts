@@ -9,6 +9,8 @@ export interface ISupplier extends Document {
   address?: string;
   tin?: string;
   paymentTerms: string;
+  leadTimeDays: number; 
+  currency: string;     
   isActive: boolean;
   notes?: string;
   createdAt: Date;
@@ -29,12 +31,13 @@ const SupplierSchema: Schema = new Schema(
       enum: ['CASH', 'NET_15', 'NET_30', 'NET_60', 'CUSTOM'], 
       default: 'CASH' 
     },
+    leadTimeDays: { type: Number, default: 3 }, 
+    currency: { type: String, default: 'PHP' }, 
     isActive: { type: Boolean, default: true },
     notes: { type: String }
   },
   { timestamps: true }
 );
-
 
 SupplierSchema.index({ tenantId: 1, name: 1 }, { unique: true });
 

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud, Layers } from 'lucide-react';
+
+import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud, Layers, Truck } from 'lucide-react';
 import { useCreateProduct, useUpdateProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { useCategories, useCreateCategory } from '../api/useCategories'; 
+
+import { useSuppliers } from '../../../hooks/useSuppliers';
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -14,7 +17,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const isEditMode = !!productToEdit;
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
-  const { data: categories = [], isLoading } = useCategories();
+  
+  const { data: categories = [], isLoading: isCatLoading } = useCategories();
+  
+  const { data: suppliers = [], isLoading: isSupLoading } = useSuppliers();
   
   const createCategoryMutation = useCreateCategory();
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -30,7 +36,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     categoryId: '',
     imageUrl: '',
     type: 'STANDARD' as 'STANDARD' | 'RAW_MATERIAL', 
-    isSellable: true 
+    isSellable: true,
+    supplierId: '' 
   });
 
   useEffect(() => {
@@ -46,10 +53,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           : (productToEdit.categoryId || ''),
         imageUrl: productToEdit.imageUrl || '',
         type: productToEdit.type || 'STANDARD', 
-        isSellable: productToEdit.isSellable ?? true 
+        isSellable: productToEdit.isSellable ?? true,
+        
+        supplierId: (typeof productToEdit.supplierId === 'object' && productToEdit.supplierId !== null)
+          ? productToEdit.supplierId._id 
+          : (productToEdit.supplierId || '') 
       });
     } else {
-      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '', type: 'STANDARD', isSellable: true });
+      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '', type: 'STANDARD', isSellable: true, supplierId: '' });
     }
   }, [productToEdit, isOpen]);
 
@@ -110,8 +121,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       categoryId: formData.categoryId,
       imageUrl: formData.imageUrl,
       type: formData.type, 
-      isSellable: formData.isSellable 
-    };
+      isSellable: formData.isSellable,
+supplierId: formData.supplierId === '' ? undefined : formData.supplierId    };
 
     try {
       if (isEditMode) {
@@ -126,7 +137,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   };
 
   if (!isOpen) return null;
-  if (isLoading) return <div>Loading...</div>;
+  if (isCatLoading || isSupLoading) return <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60"><Loader2 size={48} className="animate-spin text-white" /></div>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-fadeIn">
@@ -202,7 +213,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
           {/* RIGHT COLUMN: DETAILS */}
           <div className="w-full md:w-2/3 space-y-6">
             
-            {/* --- NEW: PRODUCT TYPE TOGGLE --- */}
+            {/* CATALOG CONFIGURATION */}
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
               <label className="text-sm font-bold text-blue-900 flex items-center gap-2">
                 <Layers size={16} className="text-blue-500" /> Catalog Configuration
@@ -255,62 +266,81 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               />
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                  <FolderOpen size={16} className="text-gray-400" /> Category
-                </label>
-                
-                {!isAddingCategory && (
-                  <button 
-                    type="button" 
-                    onClick={() => setIsAddingCategory(true)}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <FolderOpen size={16} className="text-gray-400" /> Category
+                  </label>
+                  
+                  {!isAddingCategory && (
+                    <button 
+                      type="button" 
+                      onClick={() => setIsAddingCategory(true)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <Plus size={14} /> Quick Add
+                    </button>
+                  )}
+                </div>
+
+                {isAddingCategory ? (
+                  <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <input 
+                      type="text" 
+                      placeholder="New Category Name..." 
+                      className="flex-1 px-3 py-1.5 rounded outline-none border border-blue-200 focus:border-blue-400 text-sm"
+                      value={newCategoryName}
+                      onChange={e => setNewCategoryName(e.target.value)}
+                      autoFocus
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleSaveNewCategory}
+                      disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
+                      className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      {createCategoryMutation.isPending ? 'Saving...' : 'Save'}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setIsAddingCategory(false)}
+                      className="text-gray-500 px-2 hover:text-gray-700"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={formData.categoryId}
+                    onChange={e => setFormData({...formData, categoryId: e.target.value})}
                   >
-                    <Plus size={14} /> Quick Add
-                  </button>
+                    <option value="" disabled>Select a Category...</option>
+                    {categories.map((cat: any) => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
                 )}
               </div>
 
-              {isAddingCategory ? (
-                <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                  <input 
-                    type="text" 
-                    placeholder="New Category Name..." 
-                    className="flex-1 px-3 py-1.5 rounded outline-none border border-blue-200 focus:border-blue-400 text-sm"
-                    value={newCategoryName}
-                    onChange={e => setNewCategoryName(e.target.value)}
-                    autoFocus
-                  />
-                  <button 
-                    type="button" 
-                    onClick={handleSaveNewCategory}
-                    disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-blue-700 disabled:bg-blue-300"
-                  >
-                    {createCategoryMutation.isPending ? 'Saving...' : 'Save'}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsAddingCategory(false)}
-                    className="text-gray-500 px-2 hover:text-gray-700"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ) : (
-                <select
-                  required
+              {/* --- NEW SUPPLIER DROPDOWN --- */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Truck size={16} className="text-gray-400" /> Default Supplier
+                </label>
+                <select 
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                  value={formData.categoryId}
-                  onChange={e => setFormData({...formData, categoryId: e.target.value})}
+                  value={formData.supplierId} 
+                  onChange={e => setFormData({...formData, supplierId: e.target.value})}
                 >
-                  <option value="" disabled>Select a Category...</option>
-                  {categories.map((cat: any) => (
-                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  <option value="">No supplier assigned</option>
+                  {suppliers.map((sup: any) => (
+                    <option key={sup._id} value={sup._id}>{sup.name}</option>
                   ))}
                 </select>
-              )}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -378,7 +408,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                 </div>
               </label>
 
-              {/* --- NEW: MANUAL IS-SELLABLE OVERRIDE --- */}
               <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                 <input 
                   type="checkbox" 
@@ -395,13 +424,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                   </div>
                 </div>
               </label>
-
             </div>
           </div>
           
         </form>
         
-        {/* FOOTER */}
         <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">Cancel</button>
           <button type="button" onClick={handleSubmit} disabled={isUploadingImage || createProductMutation.isPending || updateProductMutation.isPending} className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-xl shadow-sm transition-colors">
