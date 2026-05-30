@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useProducts, useDeleteProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { Edit, Trash2, Search, AlertCircle, CheckCircle2, XCircle, ChefHat } from 'lucide-react';
-import { RecipeBuilderModal } from './RecipeBuilderModal'; // <-- IMPORT MODAL
+import { RecipeBuilderModal } from './RecipeBuilderModal'; 
 
 interface ProductTableProps {
   onOpenForm: (product: Product) => void;
@@ -15,7 +15,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ onOpenForm }) => {
   const deleteProductMutation = useDeleteProduct();
   const [searchQuery, setSearchQuery] = useState('');
   
-  // State for the Recipe Builder Modal
+  
   const [recipeProduct, setRecipeProduct] = useState<Product | null>(null);
 
   const filteredProducts = products?.filter(p => 

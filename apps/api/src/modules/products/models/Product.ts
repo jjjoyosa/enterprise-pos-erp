@@ -18,6 +18,9 @@ export interface IProduct extends Document {
   stockQuantity: number;
   imageUrl?: string; 
   supplierId?: mongoose.Types.ObjectId;
+  
+  reorderPoint: number;
+  targetStock: number;
 }
 
 const ProductSchema = new Schema({
@@ -41,6 +44,9 @@ const ProductSchema = new Schema({
   stockQuantity: { type: Number, default: 0 },
   imageUrl: { type: String } ,
   supplierId: { type: Schema.Types.ObjectId, ref: 'Supplier', required: false },
+  
+  reorderPoint: { type: Number, default: 0 },
+  targetStock: { type: Number, default: 0 }
 }, { timestamps: true });
 
 ProductSchema.index({ tenantId: 1, sku: 1 }, { unique: true });

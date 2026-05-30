@@ -19,7 +19,7 @@ function App() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const isAuthenticated = !!localStorage.getItem('erp_token');
 
-  // Decode the token to get the user's role for the top badge
+  
   const userRole = useMemo(() => {
     try {
       const token = localStorage.getItem('erp_token');

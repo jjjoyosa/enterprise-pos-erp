@@ -127,7 +127,7 @@ export const InventoryList = () => {
                       ) : item.warehouseId?.name || 'N/A'}
                     </td>
                     <td className="p-4 text-center">
-                      <span className={`px-3 py-1 rounded-md text-xs font-bold border ${item.quantity <= 10 ? "text-red-700 bg-red-50 border-red-100" : "text-green-700 bg-green-50 border-green-100"}`}>
+                      <span className={`px-3 py-1 rounded-md text-xs font-bold border ${item.quantity <= 15 ? "text-red-700 bg-red-50 border-red-100" : "text-green-700 bg-green-50 border-green-100"}`}>
                         {item.quantity} units
                       </span>
                     </td>

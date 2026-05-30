@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-
-import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud, Layers, Truck } from 'lucide-react';
+import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud, Layers, Truck, AlertTriangle, Target } from 'lucide-react';
 import { useCreateProduct, useUpdateProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { useCategories, useCreateCategory } from '../api/useCategories'; 
-
 import { useSuppliers } from '../../../hooks/useSuppliers';
 
 interface ProductFormProps {
@@ -19,7 +17,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const updateProductMutation = useUpdateProduct();
   
   const { data: categories = [], isLoading: isCatLoading } = useCategories();
-  
   const { data: suppliers = [], isLoading: isSupLoading } = useSuppliers();
   
   const createCategoryMutation = useCreateCategory();
@@ -37,7 +34,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     imageUrl: '',
     type: 'STANDARD' as 'STANDARD' | 'RAW_MATERIAL', 
     isSellable: true,
-    supplierId: '' 
+    supplierId: '',
+    // --- ADDED STATE ---
+    reorderPoint: 0,
+    targetStock: 0
   });
 
   useEffect(() => {
@@ -54,13 +54,15 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
         imageUrl: productToEdit.imageUrl || '',
         type: productToEdit.type || 'STANDARD', 
         isSellable: productToEdit.isSellable ?? true,
-        
         supplierId: (typeof productToEdit.supplierId === 'object' && productToEdit.supplierId !== null)
           ? productToEdit.supplierId._id 
-          : (productToEdit.supplierId || '') 
+          : (productToEdit.supplierId || ''),
+        // --- LOAD PARAMS ---
+        reorderPoint: (productToEdit as any).reorderPoint || 0,
+        targetStock: (productToEdit as any).targetStock || 0
       });
     } else {
-      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '', type: 'STANDARD', isSellable: true, supplierId: '' });
+      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '', type: 'STANDARD', isSellable: true, supplierId: '', reorderPoint: 0, targetStock: 0 });
     }
   }, [productToEdit, isOpen]);
 
@@ -122,7 +124,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       imageUrl: formData.imageUrl,
       type: formData.type, 
       isSellable: formData.isSellable,
-supplierId: formData.supplierId === '' ? undefined : formData.supplierId    };
+      supplierId: formData.supplierId === '' ? undefined : formData.supplierId,
+      // --- ADD TO PAYLOAD ---
+      reorderPoint: Number(formData.reorderPoint),
+      targetStock: Number(formData.targetStock)
+    };
 
     try {
       if (isEditMode) {
@@ -325,7 +331,6 @@ supplierId: formData.supplierId === '' ? undefined : formData.supplierId    };
                 )}
               </div>
 
-              {/* --- NEW SUPPLIER DROPDOWN --- */}
               <div className="space-y-1.5">
                 <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <Truck size={16} className="text-gray-400" /> Default Supplier
@@ -392,6 +397,45 @@ supplierId: formData.supplierId === '' ? undefined : formData.supplierId    };
                 />
               </div>
             </div>
+
+            {/* --- NEW: AUTO-PO THRESHOLDS --- */}
+            {formData.supplierId && formData.trackInventory && (
+              <div className="grid grid-cols-2 gap-4 bg-orange-50 p-4 rounded-xl border border-orange-100">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-orange-900 flex items-center gap-2">
+                    <AlertTriangle size={16} className="text-orange-500" /> Reorder Point
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    placeholder="e.g. 15"
+                    className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                    value={formData.reorderPoint}
+                    onChange={e => setFormData({...formData, reorderPoint: Number(e.target.value)})}
+                  />
+                  <div className="text-[10px] text-orange-600 font-medium leading-tight mt-1">
+                    Auto-PO drafts when stock drops below this number
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-orange-900 flex items-center gap-2">
+                    <Target size={16} className="text-orange-500" /> Target Stock
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    placeholder="e.g. 100"
+                    className="w-full px-4 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                    value={formData.targetStock}
+                    onChange={e => setFormData({...formData, targetStock: Number(e.target.value)})}
+                  />
+                  <div className="text-[10px] text-orange-600 font-medium leading-tight mt-1">
+                    Auto-PO orders enough to reach this quantity
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5 pt-2">
               <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">

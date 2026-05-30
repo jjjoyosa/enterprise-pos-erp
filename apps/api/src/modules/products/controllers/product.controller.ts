@@ -1,12 +1,9 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
 import Product from '../models/Product';
-
 import Inventory from '../../inventory/models/Inventory'; 
 import Warehouse from '../../inventory/models/Warehouse'; 
-
 import Recipe from '../models/Recipe';
-
 
 export const getRecipe = async (req: Request, res: Response) => {
   try {
@@ -26,7 +23,6 @@ export const getRecipe = async (req: Request, res: Response) => {
   }
 };
 
-
 export const upsertRecipe = async (req: Request, res: Response) => {
   try {
     const tenantId = (req as any).tenantId;
@@ -34,7 +30,6 @@ export const upsertRecipe = async (req: Request, res: Response) => {
     const { ingredients } = req.body;
 
     if (!ingredients || ingredients.length === 0) {
-      
       await Recipe.findOneAndDelete({ tenantId, productId });
       return res.status(200).json({ message: 'Recipe removed. Item is now a standard retail product.' });
     }
@@ -77,14 +72,11 @@ export const createProduct = async (req: Request, res: Response) => {
     const newProduct = new Product(productData);
     await newProduct.save();
     
-    
     if (newProduct.trackInventory) {
-      
       const defaultWarehouse = await Warehouse.findOne({ tenantId, isDefault: true }) 
                             || await Warehouse.findOne({ tenantId });
       
       if (defaultWarehouse) {
-        
         await Inventory.create({
           tenantId: tenantId,
           productId: newProduct._id,
@@ -153,12 +145,18 @@ export const updateProduct = async (req: Request, res: Response) => {
     const { id } = req.params;
     
     
-    const { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable, supplierId } = req.body;
+    const { 
+      name, basePrice, costPrice, trackInventory, categoryId, 
+      imageUrl, type, isSellable, supplierId, reorderPoint, targetStock 
+    } = req.body;
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: id, tenantId: req.tenantId },
       
-      { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable, supplierId },
+      { 
+        name, basePrice, costPrice, trackInventory, categoryId, 
+        imageUrl, type, isSellable, supplierId, reorderPoint, targetStock 
+      },
       { new: true }
     );
 

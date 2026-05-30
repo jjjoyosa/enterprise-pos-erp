@@ -5,11 +5,12 @@ import { logAuditEvent } from '../../audit/services/audit.service';
 
 export const checkAndDraftPO = async (tenantId: string, productId: string, currentStock: number) => {
   try {
-    const product = await Product.findOne({ _id: productId, tenantId });
+    const product: any = await Product.findOne({ _id: productId, tenantId });
     if (!product) return;
 
-    const LOW_STOCK_THRESHOLD = 20; 
-    const RESTOCK_TARGET = 100;
+    
+    const LOW_STOCK_THRESHOLD = product.reorderPoint > 0 ? product.reorderPoint : 20; 
+    const RESTOCK_TARGET = product.targetStock > 0 ? product.targetStock : 100;
 
     if (currentStock > LOW_STOCK_THRESHOLD) return;
 
@@ -21,12 +22,15 @@ export const checkAndDraftPO = async (tenantId: string, productId: string, curre
 
     if (existingDraft) return; 
 
+    
     const orderQuantity = RESTOCK_TARGET - currentStock;
+    
+    
+    if (orderQuantity <= 0) return;
+
     const poNumber = `PO-${Date.now().toString().slice(-6)}`;
 
-    
-    
-    let finalSupplierId = (product as any).supplierId;
+    let finalSupplierId = product.supplierId;
     if (!finalSupplierId) {
       const fallbackSupplier = await Supplier.findOne({ tenantId });
       if (!fallbackSupplier) {
@@ -36,7 +40,6 @@ export const checkAndDraftPO = async (tenantId: string, productId: string, curre
       finalSupplierId = fallbackSupplier._id;
     }
 
-    
     const newPO = await PurchaseOrder.create({
       tenantId,
       poNumber,
@@ -48,7 +51,8 @@ export const checkAndDraftPO = async (tenantId: string, productId: string, curre
         unitCost: product.costPrice || 0,
         total: orderQuantity * (product.costPrice || 0) 
       }],
-      total: orderQuantity * (product.costPrice || 0), 
+      
+      totalAmount: orderQuantity * (product.costPrice || 0), 
       notes: 'SYSTEM AUTO-DRAFT: Generated due to low stock threshold.'
     });
 
@@ -62,7 +66,7 @@ export const checkAndDraftPO = async (tenantId: string, productId: string, curre
       details: `Auto-drafted PO ${poNumber} for ${orderQuantity} units of ${product.name} (Stock fell to ${currentStock}).`
     });
 
-    console.log(`[ERP Engine] Auto-PO drafted for ${product.name}`);
+    console.log(`[ERP Engine] Auto-PO drafted for ${product.name}. Quantity: ${orderQuantity}`);
 
   } catch (error) {
     console.error('[ERP Engine] Failed to run Auto-Purchasing check', error);

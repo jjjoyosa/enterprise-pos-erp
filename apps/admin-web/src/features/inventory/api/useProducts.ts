@@ -15,7 +15,7 @@ export interface Product {
   imageUrl?: string; 
   type?: 'STANDARD' | 'RAW_MATERIAL'; 
   isSellable?: boolean;
-  supplierId?: string | { _id: string; name: string }; // <-- NEW
+  supplierId?: string | { _id: string; name: string }; 
 }
 
 const fetchProducts = async (): Promise<Product[]> => {
