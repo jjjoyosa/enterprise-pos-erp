@@ -192,7 +192,7 @@ export const SupplierManagement = () => {
       {/* Inline Modal for adding/editing suppliers */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl w-[500px] overflow-hidden border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl w-500px overflow-hidden border border-gray-100">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Building2 className="text-blue-600" size={20} /> {editingSupplier ? 'Edit Supplier' : 'New Supplier'}

@@ -40,6 +40,26 @@ export const upsertRecipe = async (req: Request, res: Response) => {
       { new: true, upsert: true }
     );
 
+    
+    let totalRecipeCost = 0;
+    
+    for (const ingredient of recipe.ingredients) {
+      const rawMaterial = await Product.findOne({ 
+        _id: ingredient.materialProductId, 
+        tenantId 
+      });
+      
+      if (rawMaterial) {
+        totalRecipeCost += (rawMaterial.costPrice || 0) * ingredient.quantity;
+      }
+    }
+
+    await Product.findOneAndUpdate(
+      { _id: recipe.productId, tenantId },
+      { costPrice: totalRecipeCost }
+    );
+    
+
     res.status(200).json({ message: 'Recipe saved successfully', recipe });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -144,7 +164,6 @@ export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    
     const { 
       name, basePrice, costPrice, trackInventory, categoryId, 
       imageUrl, type, isSellable, supplierId, reorderPoint, targetStock 
@@ -152,7 +171,6 @@ export const updateProduct = async (req: Request, res: Response) => {
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: id, tenantId: req.tenantId },
-      
       { 
         name, basePrice, costPrice, trackInventory, categoryId, 
         imageUrl, type, isSellable, supplierId, reorderPoint, targetStock 

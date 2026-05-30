@@ -158,7 +158,7 @@ export const PurchaseOrderManagement = () => {
       {/* Create PO Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl w-[850px] max-h-[90vh] flex flex-col border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl w-850px max-h-[90vh] flex flex-col border border-gray-100">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <ClipboardList className="text-blue-600" size={20} /> Draft Purchase Order
@@ -241,7 +241,7 @@ export const PurchaseOrderManagement = () => {
       {/* Receive Goods Modal */}
       {receivingPo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl w-[900px] flex flex-col border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl w-900px flex flex-col border border-gray-100">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <PackageCheck className="text-green-600" size={20} /> Receive Goods ({receivingPo.poNumber})

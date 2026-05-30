@@ -46,6 +46,7 @@ export const processSale = async (req: Request, res: Response) => {
         productId: product._id,
         quantity: item.quantity,
         unitPrice: product.basePrice,
+        unitCost: product.costPrice || 0, 
         subtotal: lineSubtotal
       });
     }
@@ -195,57 +196,6 @@ export const getSales = async (req: Request, res: Response) => {
   }
 };
 
-export const getDashboardAnalytics = async (req: Request, res: Response) => {
-  try {
-    const tenantId = (req as any).tenantId;
-    if (!tenantId) return res.status(401).json({ error: 'Unauthorized' });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const todaysSales = await Sale.find({ tenantId, createdAt: { $gte: today } });
-
-    const todaysRevenue = todaysSales.reduce((sum, sale) => sum + sale.total, 0);
-    const orderCount = todaysSales.length;
-
-    const lowStockInventory = await Inventory.find({ tenantId, quantity: { $lt: 10 } })
-    .populate('productId', 'name sku')
-    .limit(5);
-
-    const lowStockProducts = lowStockInventory.map((inv: any) => ({
-      _id: inv.productId._id,
-      name: inv.productId.name,
-      sku: inv.productId.sku,
-      stock: inv.quantity
-    }));
-
-    const topProducts = await Sale.aggregate([
-      { $match: { tenantId: tenantId } }, 
-      { $unwind: "$items" }, 
-      { $group: { 
-          _id: "$items.productId", 
-          totalSold: { $sum: "$items.quantity" },
-          revenue: { $sum: "$items.subtotal" }
-      }},
-      { $sort: { totalSold: -1 } }, 
-      { $limit: 5 }
-    ]);
-
-    const populatedTopProducts = await Promise.all(topProducts.map(async (p) => {
-      const product = await Product.findById(p._id).select('name');
-      return {
-        name: product ? product.name : 'Unknown Product',
-        totalSold: p.totalSold,
-        revenue: p.revenue
-      };
-    }));
-
-    res.status(200).json({ todaysRevenue, orderCount, lowStockProducts, topProducts: populatedTopProducts });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 export const processRefund = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -324,6 +274,12 @@ export const processRefund = async (req: Request, res: Response) => {
     sale.status = isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
     sale.notes = (sale.notes ? sale.notes + ' | ' : '') + `Refunded ${isFullRefund ? 'Fully' : 'Partially'}: ₱${totalRefundAmount} - ${refundReason}`;
     
+    sale.items.forEach((item: any) => {
+      if (item.unitCost === undefined || item.unitCost === null) {
+        item.unitCost = 0;
+      }
+    });
+
     await sale.save();
 
     const authorizedBy = refundReason.includes('(Authorized by') 

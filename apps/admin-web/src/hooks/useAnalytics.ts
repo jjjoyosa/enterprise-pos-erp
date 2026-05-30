@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 
-
 export interface AnalyticsData {
-  todaysRevenue: number;
+  totalRevenue: number;
+  netProfit: number;
   orderCount: number;
   lowStockProducts: Array<{
     _id: string;
@@ -17,16 +17,14 @@ export interface AnalyticsData {
   }>;
 }
 
-export const useAnalytics = () => {
-  
+export const useAnalytics = (params?: { startDate: string; endDate: string }) => {
   return useQuery<AnalyticsData>({
-    queryKey: ['dashboard-analytics'],
+    queryKey: ['dashboard-analytics', params],
     queryFn: async () => {
-      const { data } = await api.get('/sales/analytics');
+      const { data } = await api.get('/sales/analytics', { params });
       return data;
     },
     refetchInterval: 15000, 
     refetchOnWindowFocus: true,
   });
 };
-

@@ -33,7 +33,7 @@ export const ManagerOverrideModal: React.FC<ManagerOverrideModalProps> = ({ onSu
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/70 backdrop-blur-md p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-gray-900/70 backdrop-blur-md p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-red-100">
         
         <div className="bg-red-50 p-6 flex flex-col items-center text-center border-b border-red-100">

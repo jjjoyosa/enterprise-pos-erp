@@ -969,51 +969,36 @@ That list is essentially the **complete functional scope** of an enterprise POS/
 
 
 
+🚀 The Master Enterprise Blueprint (Version 6.0)
+We have packed everything you requested into the ultimate operational sprint.
 
-🗺️ The Master Enterprise Blueprint (Version 4.1)
-📦 Sprint 9: Manager Controls & Procurement UI (Immediate Next Step)
-Bridging the gap between the POS drawer, the Auto-PO backend, and physical warehouse operations.
+👑 Sprint 10: The Command Center, Payroll, & The Ledger (Current Sprint)
+Making the data highly actionable, tracking staff payouts, and automating your financial books.
 
-Action 1: Mid-Shift Manager Dashboard (UI): Building the React modal in the POS where managers can view the live drawer expectations (which your backend is already calculating) and authorize cash payouts.
+Action 1: Dashboard V2 (Filters & Net Profit): Refactoring getDashboardAnalytics to accept dynamic date ranges ("Today", "This Week", "Custom"). We will also calculate Gross vs. Net Profit by deducting the costPrice (COGS) of sold items.
 
-Action 2: Supplier Directory: A simple CRUD page in the Admin Web to manage vendors, contact info, and lead times.
+Action 2: ABC Inventory Analysis: Building the algorithm to automatically classify your catalog into 'A' (High Value/Fast Moving), 'B' (Moderate), and 'C' (Dead Stock) based on historical sales volume.
 
-Action 3: The PO Dashboard: A UI where managers can view the DRAFT Purchase Orders our engine generates, edit quantities/prices, and click "Approve".
+Action 3: Active Staff & "Sweldo" Engine: Adding an "Active Shifts" widget to see who is clocked in. We will add pay rates to the Staff model so the system automatically calculates their payout ("Sweldo") for the Z-Report/Cash Drop.
 
-Action 4: Goods Receipt Note (GRN): A workflow to "Receive" the PO. When the supplier delivers the goods, the manager clicks "Receive," which automatically injects the physical stock into the warehouse ledger.
+Action 4: The General Ledger: Creating the foundational Chart of Accounts. Every POS sale and received PO will automatically write a balanced Double-Entry journal record (e.g., Credit Sales Revenue, Debit Cash).
 
-📈 Sprint 10: Advanced Analytics & Dashboard
-Giving the business owner a "God View" of operations.
+Action 5: The Export Engine: Building robust CSV/Excel bulk downloads for Sales History, Inventory Valuations, and the Ledger so you can hand the data straight to an accountant.
 
-Action 1: The Executive Dashboard: Admin charts showing Gross Sales, Net Profit, and Revenue (Today, Weekly, Monthly, All-Time).
+⚖️ Sprint 11: Compliance & Advanced CRM
+The operational polish required for real-world auditing and customer retention.
 
-Action 2: ABC Analysis: Automatically identifying the top-selling items (A) vs. dead stock (C).
+Action 1: Advanced CRM & Store Credit: Upgrading the customer profiles to handle refunds directly to Store Credit, alongside tiered loyalty point redemption rules.
 
-Action 3: Export Engine: CSV bulk downloads for sales histories and inventory levels.
+Action 2: BIR / Tax Engine: Implementing strict VAT, VAT-Exempt, and Zero-Rated tax calculations at checkout.
 
-⚖️ Sprint 11: The Double-Entry Accounting Core
-The bridge from POS to Corporate Finance.
+Action 3: Official Book Generation: Generating the official CSV/DAT files for Sales and Purchase books for strict BIR audit compliance.
 
-Action 1: Chart of Accounts: Standard ledgers (Cash, AP, AR, Inventory Asset, COGS, Sales Revenue).
+📱 Sprint 12: The Universal PWA & Security Polish
+Making the system bulletproof and native-feeling.
 
-Action 2: Automated Journal Entries: Every POS sale and PO receipt automatically balances the ledgers in the background.
+Action 1: Omnichannel Responsiveness: Final Tailwind sweeps to ensure the POS behaves flawlessly on an iPad tablet, while the Admin Web scales perfectly for a desktop monitor.
 
-Action 3: Dynamic Tax Engine: Handling VAT, VAT-Exempt, and Zero-Rated scenarios seamlessly at checkout.
+Action 2: PWA Conversion: Adding manifest.json and service workers so the POS and Admin apps can be installed directly to device home screens with zero-latency booting.
 
-🏛️ Sprint 12: Complete CRM, HR & Compliance
-The operational polish for real-world business.
-
-Action 1: HR & Timekeeping: Employee clock-in/out and payroll calculation.
-
-Action 2: Store Credit & Advanced Loyalty: Allowing refunds to store credit and tiered loyalty points.
-
-Action 3: BIR Book Generation: Generating the official CSV/DAT files for Sales and Purchase books for strict audit compliance.
-
-📱 Sprint 13: The Universal PWA, Security & Final Polish
-Making the system feel like a native app on any device.
-
-Action 1: Omnichannel Responsiveness: Implementing strict Tailwind breakpoints so the POS looks perfect on an iPad Mini, a 1080p touch monitor, or a mobile phone.
-
-Action 2: Progressive Web App (PWA) Conversion: Adding manifest.json and Service Workers to pos-web and admin-web so they can be installed directly to the home screen for zero-latency booting.
-
-Action 3: Security Hardening: A final sweep of route protections, error boundaries, and API rate-limiting before production deployment.
+Action 3: Security Hardening: Final sweep of JWT rotations, route guards, and API rate-limiting before deploying to production.

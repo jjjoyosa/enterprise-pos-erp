@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, DollarSign, Clock, User, ShieldCheck, ArrowRight, Plus, Minus, Equal } from 'lucide-react';
+import { X, DollarSign, Clock, User, ShieldCheck, Plus, Minus, Equal } from 'lucide-react';
 
 interface ManagerDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
-  cashierName: string; 
 }
 
-export const ManagerDashboardModal: React.FC<ManagerDashboardModalProps> = ({ isOpen, onClose, cashierName }) => {
+export const ManagerDashboardModal: React.FC<ManagerDashboardModalProps> = ({ isOpen, onClose }) => {
   const [shiftData, setShiftData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 

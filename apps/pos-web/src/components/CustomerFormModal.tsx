@@ -52,7 +52,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-slideUp">
         
         <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50">

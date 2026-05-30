@@ -28,7 +28,6 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({ onClose }) => 
   if (isSuccess && data?.summary) {
     const { summary } = data;
     const isShort = summary.variance < 0;
-    const isOver = summary.variance > 0;
     const isBalanced = summary.variance === 0;
 
     return (

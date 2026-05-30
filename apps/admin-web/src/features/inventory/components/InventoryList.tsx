@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useInventoryLevels } from '../api/useInventory';
 import type { InventoryLevel } from '../api/useInventory';
 import { AdjustStockModal } from './AdjustStockModal';

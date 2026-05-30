@@ -35,7 +35,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     type: 'STANDARD' as 'STANDARD' | 'RAW_MATERIAL', 
     isSellable: true,
     supplierId: '',
-    // --- ADDED STATE ---
     reorderPoint: 0,
     targetStock: 0
   });
@@ -57,7 +56,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
         supplierId: (typeof productToEdit.supplierId === 'object' && productToEdit.supplierId !== null)
           ? productToEdit.supplierId._id 
           : (productToEdit.supplierId || ''),
-        // --- LOAD PARAMS ---
         reorderPoint: (productToEdit as any).reorderPoint || 0,
         targetStock: (productToEdit as any).targetStock || 0
       });
@@ -125,7 +123,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       type: formData.type, 
       isSellable: formData.isSellable,
       supplierId: formData.supplierId === '' ? undefined : formData.supplierId,
-      // --- ADD TO PAYLOAD ---
       reorderPoint: Number(formData.reorderPoint),
       targetStock: Number(formData.targetStock)
     };
@@ -384,9 +381,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                  <DollarSign size={16} className="text-gray-400" /> Cost Price (₱)
+                <label className="text-sm font-bold text-gray-700 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2"><DollarSign size={16} className="text-gray-400" /> Cost Price (₱)</span>
                 </label>
+                {/* --- ADDED UI HINT --- */}
+                <div className="text-[10px] text-gray-500 font-medium leading-tight mb-1">
+                  Overwritten automatically if a Recipe is built for this item.
+                </div>
                 <input 
                   required
                   type="number" 
@@ -398,7 +399,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
               </div>
             </div>
 
-            {/* --- NEW: AUTO-PO THRESHOLDS --- */}
             {formData.supplierId && formData.trackInventory && (
               <div className="grid grid-cols-2 gap-4 bg-orange-50 p-4 rounded-xl border border-orange-100">
                 <div className="space-y-1.5">

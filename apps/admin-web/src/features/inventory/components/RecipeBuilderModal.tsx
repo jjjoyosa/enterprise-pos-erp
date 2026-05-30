@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, ChefHat, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query'; 
 import type { Product } from '../api/useProducts';
 
 interface RecipeBuilderModalProps {
@@ -12,14 +13,13 @@ interface RecipeBuilderModalProps {
 export const RecipeBuilderModal: React.FC<RecipeBuilderModalProps> = ({ isOpen, onClose, product, allProducts }) => {
   const [ingredients, setIngredients] = useState<{ materialProductId: string; quantity: number }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const queryClient = useQueryClient(); 
   
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && product) {
-      
       setSuccessMessage(null);
       setErrorMessage(null);
       fetchRecipe();
@@ -65,9 +65,10 @@ export const RecipeBuilderModal: React.FC<RecipeBuilderModalProps> = ({ isOpen, 
       });
 
       if (res.ok) {
-        
         setSuccessMessage(`Recipe for ${product.name} saved successfully!`);
         
+        
+        queryClient.invalidateQueries({ queryKey: ['products'] });
         
         setTimeout(() => {
           onClose();

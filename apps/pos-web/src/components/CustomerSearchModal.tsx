@@ -116,7 +116,7 @@ export const CustomerSearchModal = ({ isOpen, onClose, onSelect }: any) => {
                     className="w-full flex items-center justify-between p-3 bg-white hover:bg-blue-50 rounded-xl cursor-pointer transition-all group text-left border border-transparent hover:border-blue-200 hover:shadow-sm"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200 text-gray-600 group-hover:text-blue-700 rounded-full flex items-center justify-center font-bold text-sm transition-colors border border-gray-200 group-hover:border-blue-300 uppercase">
+                      <div className="w-10 h-10 bg-linear-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200 text-gray-600 group-hover:text-blue-700 rounded-full flex items-center justify-center font-bold text-sm transition-colors border border-gray-200 group-hover:border-blue-300 uppercase">
                         {c.firstName.charAt(0)}{c.lastName?.charAt(0)}
                       </div>
                       <div>

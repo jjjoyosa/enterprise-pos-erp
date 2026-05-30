@@ -4,6 +4,7 @@ export interface ISaleItem {
   productId: mongoose.Types.ObjectId;
   quantity: number;
   unitPrice: number;
+  unitCost: number; 
   subtotal: number;
 }
 
@@ -30,6 +31,7 @@ const SaleItemSchema = new Schema({
   productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   quantity: { type: Number, required: true, min: 1 },
   unitPrice: { type: Number, required: true, min: 0 },
+  unitCost: { type: Number, required: true, min: 0 }, 
   subtotal: { type: Number, required: true, min: 0 }
 });
 

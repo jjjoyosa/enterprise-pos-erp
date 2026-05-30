@@ -126,7 +126,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose, onClearCu
           
           {/* Points Toggle UI */}
           {availablePoints > 0 && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl flex items-center justify-between shadow-sm">
+            <div className="mb-6 p-4 bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl flex items-center justify-between shadow-sm">
               <div>
                 <div className="text-sm font-bold text-amber-900 flex items-center gap-2">
                   Use Loyalty Points
@@ -142,7 +142,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ onClose, onClearCu
                   checked={usePoints}
                   onChange={() => setUsePoints(!usePoints)}
                 />
-                <div className="w-11 h-6 bg-amber-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                <div className="w-11 h-6 bg-amber-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-2px after:left-2px after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
               </label>
             </div>
           )}

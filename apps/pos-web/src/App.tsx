@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useInventory } from './hooks/useInventory';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { useCartStore } from './store/useCartStore';
@@ -313,7 +313,7 @@ function App() {
         </main>
       </div>
 
-      <div className="w-[400px] bg-white shadow-xl h-full flex flex-col shrink-0 z-20 border-l border-gray-200">
+      <div className="w-400px bg-white shadow-xl h-full flex flex-col shrink-0 z-20 border-l border-gray-200">
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2 font-semibold text-lg"><ShoppingBag size={20} /> Current Order</div>
           {items.length > 0 && <button onClick={() => { clearCart(); setSelectedDiscountId(''); }} className="text-red-500 hover:text-red-700 p-2 transition-colors"><Trash2 size={20} /></button>}
@@ -380,7 +380,7 @@ function App() {
         <ManagerOverrideModal 
           actionName="Access Manager Dashboard"
           onCancel={() => setIsManagerPinOpen(false)} 
-          onSuccess={(managerName) => {
+          onSuccess={() => {
             
             setIsManagerPinOpen(false);
             setIsManagerDashboardOpen(true);
@@ -392,7 +392,6 @@ function App() {
       <ManagerDashboardModal 
         isOpen={isManagerDashboardOpen} 
         onClose={() => setIsManagerDashboardOpen(false)} 
-        cashierName="Active User" 
       />
       
       {isCheckoutOpen && (
