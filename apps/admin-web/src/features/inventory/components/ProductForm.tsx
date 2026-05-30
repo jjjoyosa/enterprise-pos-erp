@@ -24,6 +24,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false); 
 
+  
+  const [hasRecipe, setHasRecipe] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -63,6 +66,27 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '', type: 'STANDARD', isSellable: true, supplierId: '', reorderPoint: 0, targetStock: 0 });
     }
   }, [productToEdit, isOpen]);
+
+  
+  useEffect(() => {
+    const checkRecipeStatus = async () => {
+      if (isOpen && productToEdit) {
+        try {
+          const token = localStorage.getItem('erp_token');
+          const res = await fetch(`http://localhost:5000/api/v1/products/${productToEdit._id}/recipe`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          setHasRecipe(res.ok);
+        } catch (error) {
+          setHasRecipe(false);
+        }
+      } else {
+        setHasRecipe(false); 
+      }
+    };
+    checkRecipeStatus();
+  }, [isOpen, productToEdit]);
 
   const generateSKU = () => {
     if (!formData.name) {
@@ -384,18 +408,31 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                 <label className="text-sm font-bold text-gray-700 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2"><DollarSign size={16} className="text-gray-400" /> Cost Price (₱)</span>
                 </label>
-                {/* --- ADDED UI HINT --- */}
-                <div className="text-[10px] text-gray-500 font-medium leading-tight mb-1">
-                  Overwritten automatically if a Recipe is built for this item.
-                </div>
+  
+                
                 <input 
                   required
+                  disabled={hasRecipe} 
                   type="number" 
                   step="0.01"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none ${
+                    hasRecipe 
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
+                      : 'border-gray-200 focus:ring-blue-500'
+                  }`}
                   value={formData.costPrice}
                   onChange={e => setFormData({...formData, costPrice: e.target.value})}
                 />
+                {/* --- EDITED: Dynamic UI Hint and Disabled Input --- */}
+                {hasRecipe ? (
+                  <div className="text-[10px] text-blue-600 font-bold leading-tight mb-1 flex items-center gap-1">
+                    <CheckSquare size={10} /> Locked: Auto-calculated by Recipe BOM.
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-gray-500 font-medium leading-tight mb-1">
+                    Overwritten automatically if a Recipe is built for this item.
+                  </div>
+                )}
               </div>
             </div>
 
