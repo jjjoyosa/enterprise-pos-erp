@@ -5,7 +5,7 @@ import { api } from '../services/api';
 interface ManagerOverrideModalProps {
   onSuccess: (managerName: string) => void;
   onCancel: () => void;
-  actionName: string; // e.g., "Void Transaction" or "Process Refund"
+  actionName: string; 
 }
 
 export const ManagerOverrideModal: React.FC<ManagerOverrideModalProps> = ({ onSuccess, onCancel, actionName }) => {
@@ -22,11 +22,11 @@ export const ManagerOverrideModal: React.FC<ManagerOverrideModalProps> = ({ onSu
 
     try {
       const response = await api.post('/employees/verify-pin', { pinCode: pin });
-      // PIN is correct! Pass the manager's name back to log in the audit trail
+      
       onSuccess(response.data.authorizedBy); 
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid PIN. Access Denied.');
-      setPin(''); // Clear the input field so they can try again quickly
+      setPin(''); 
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +54,7 @@ export const ManagerOverrideModal: React.FC<ManagerOverrideModalProps> = ({ onSu
                 error ? 'border-red-400 bg-red-50 text-red-900 focus:border-red-500' : 'border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20'
               }`}
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} // Only allow numbers
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} 
               maxLength={6}
               disabled={isLoading}
             />

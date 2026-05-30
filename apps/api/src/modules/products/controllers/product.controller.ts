@@ -154,12 +154,13 @@ export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    const { name, basePrice, costPrice, trackInventory, categoryId, imageUrl } = req.body;
+    
+    const { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable } = req.body;
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: id, tenantId: req.tenantId },
       
-      { name, basePrice, costPrice, trackInventory, categoryId, imageUrl },
+      { name, basePrice, costPrice, trackInventory, categoryId, imageUrl, type, isSellable },
       { new: true }
     );
 

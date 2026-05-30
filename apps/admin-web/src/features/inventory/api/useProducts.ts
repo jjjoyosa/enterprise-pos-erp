@@ -13,6 +13,8 @@ export interface Product {
     name: string;
   };
   imageUrl?: string; 
+  type?: 'STANDARD' | 'RAW_MATERIAL'; 
+  isSellable?: boolean; 
 }
 
 

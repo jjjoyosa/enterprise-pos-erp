@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud } from 'lucide-react';
+import { X, Package, Tag, Hash, DollarSign, CheckSquare, Loader2, Wand2, FolderOpen, Plus, Image as ImageIcon, UploadCloud, Layers } from 'lucide-react';
 import { useCreateProduct, useUpdateProduct } from '../api/useProducts'; 
 import type { Product } from '../api/useProducts';
 import { useCategories, useCreateCategory } from '../api/useCategories'; 
@@ -28,7 +28,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     costPrice: '',
     trackInventory: true,
     categoryId: '',
-    imageUrl: '' 
+    imageUrl: '',
+    type: 'STANDARD' as 'STANDARD' | 'RAW_MATERIAL', 
+    isSellable: true 
   });
 
   useEffect(() => {
@@ -42,10 +44,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
         categoryId: (typeof productToEdit.categoryId === 'object' && productToEdit.categoryId !== null)
           ? productToEdit.categoryId._id 
           : (productToEdit.categoryId || ''),
-        imageUrl: productToEdit.imageUrl || '' 
+        imageUrl: productToEdit.imageUrl || '',
+        type: productToEdit.type || 'STANDARD', 
+        isSellable: productToEdit.isSellable ?? true 
       });
     } else {
-      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '' });
+      setFormData({ name: '', sku: '', basePrice: '', costPrice: '', trackInventory: true, categoryId: '', imageUrl: '', type: 'STANDARD', isSellable: true });
     }
   }, [productToEdit, isOpen]);
 
@@ -71,7 +75,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     setNewCategoryName('');
   };
 
-  
   const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -82,7 +85,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
     data.append('upload_preset', 'pos_products'); 
     
     try {
-      
       const res = await fetch(`https://api.cloudinary.com/v1_1/dwnkryz7g/image/upload`, {
         method: 'POST',
         body: data
@@ -106,7 +108,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
       costPrice: Number(formData.costPrice),
       trackInventory: formData.trackInventory,
       categoryId: formData.categoryId,
-      imageUrl: formData.imageUrl 
+      imageUrl: formData.imageUrl,
+      type: formData.type, 
+      isSellable: formData.isSellable 
     };
 
     try {
@@ -176,7 +180,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                   )}
                 </div>
               )}
-              {/* Hidden file input stretching over the whole box */}
               <input 
                 type="file" 
                 accept="image/*"
@@ -198,6 +201,46 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
 
           {/* RIGHT COLUMN: DETAILS */}
           <div className="w-full md:w-2/3 space-y-6">
+            
+            {/* --- NEW: PRODUCT TYPE TOGGLE --- */}
+            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-3">
+              <label className="text-sm font-bold text-blue-900 flex items-center gap-2">
+                <Layers size={16} className="text-blue-500" /> Catalog Configuration
+              </label>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, type: 'STANDARD', isSellable: true })}
+                  className={`p-3 text-sm font-bold rounded-lg border transition-all ${
+                    formData.type === 'STANDARD' 
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  Finished Good
+                  <div className={`text-xs mt-1 font-medium ${formData.type === 'STANDARD' ? 'text-blue-100' : 'text-gray-400'}`}>
+                    Sellable on POS
+                  </div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, type: 'RAW_MATERIAL', isSellable: false })}
+                  className={`p-3 text-sm font-bold rounded-lg border transition-all ${
+                    formData.type === 'RAW_MATERIAL' 
+                      ? 'bg-purple-600 text-white border-purple-600 shadow-md' 
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  Raw Material
+                  <div className={`text-xs mt-1 font-medium ${formData.type === 'RAW_MATERIAL' ? 'text-purple-100' : 'text-gray-400'}`}>
+                    Hidden from POS
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
                 <Tag size={16} className="text-gray-400" /> Product Name
@@ -334,6 +377,25 @@ export const ProductForm: React.FC<ProductFormProps> = ({ isOpen, onClose, produ
                   </div>
                 </div>
               </label>
+
+              {/* --- NEW: MANUAL IS-SELLABLE OVERRIDE --- */}
+              <label className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input 
+                  type="checkbox" 
+                  className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  checked={formData.isSellable}
+                  onChange={e => setFormData({...formData, isSellable: e.target.checked})}
+                />
+                <div>
+                  <div className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <CheckSquare size={16} className="text-gray-400" /> Available on POS
+                  </div>
+                  <div className="text-xs text-gray-500 font-medium mt-0.5">
+                    Uncheck to hide this item from cashiers
+                  </div>
+                </div>
+              </label>
+
             </div>
           </div>
           

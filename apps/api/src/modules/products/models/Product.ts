@@ -12,6 +12,9 @@ export interface IProduct extends Document {
   trackInventory: boolean;
   hasVariants: boolean;
   status: 'ACTIVE' | 'ARCHIVED';
+  type: 'STANDARD' | 'RAW_MATERIAL'; 
+  isSellable: boolean; 
+  isActive: boolean;
   stockQuantity: number;
   imageUrl?: string; 
   supplierId?: mongoose.Types.ObjectId;
@@ -29,6 +32,8 @@ const ProductSchema = new Schema({
   trackInventory: { type: Boolean, default: true },
   hasVariants: { type: Boolean, default: false },
   status: { type: String, enum: ['ACTIVE', 'ARCHIVED'], default: 'ACTIVE' },
+  type: { type: String, enum: ['STANDARD', 'RAW_MATERIAL'], default: 'STANDARD' }, 
+  isSellable: { type: Boolean, default: true }, 
   isActive: { 
     type: Boolean, 
     default: true 

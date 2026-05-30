@@ -80,7 +80,6 @@ function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCashManagementOpen, setIsCashManagementOpen] = useState(false);
   
-  
   const [isManagerPinOpen, setIsManagerPinOpen] = useState(false);
   const [isManagerDashboardOpen, setIsManagerDashboardOpen] = useState(false);
   
@@ -151,6 +150,12 @@ function App() {
     inventory.forEach(item => {
       const product = item.productId;
       if (!product) return;
+      
+      
+      if ((product as any).isSellable === false || (product as any).type === 'RAW_MATERIAL') {
+        return; 
+      }
+
       if (aggregatedMap.has(product._id)) {
         aggregatedMap.get(product._id).quantity += (item.quantity || 0);
       } else {
