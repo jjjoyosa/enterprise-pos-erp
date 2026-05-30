@@ -57,7 +57,7 @@ export const getCurrentShift = async (req: Request, res: Response) => {
       cashierId, 
       tenantId, 
       status: 'OPEN' 
-    });
+    }).populate('cashierId', '-password');
 
     res.status(200).json(shift);
   } catch (error: any) {
@@ -82,12 +82,10 @@ export const recordCashMovement = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No open shift found.' });
     }
 
-    
     const movement = { type, amount, reason, timestamp: new Date() };
     if (!shift.cashMovements) shift.cashMovements = [];
     shift.cashMovements.push(movement);
 
-    
     if (type === 'PAY_IN') {
       shift.expectedCash += amount;
     } else if (type === 'PAY_OUT') {
@@ -96,7 +94,6 @@ export const recordCashMovement = async (req: Request, res: Response) => {
 
     await shift.save();
 
-    
     await logAuditEvent({
       tenantId,
       actorName: managerName || 'System', 
@@ -194,7 +191,6 @@ export const closeShift = async (req: Request, res: Response) => {
     
     await shift.save();
 
-    
     await logAuditEvent({
       tenantId,
       actorName: 'System', 

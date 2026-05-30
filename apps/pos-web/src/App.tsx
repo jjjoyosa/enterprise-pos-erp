@@ -14,11 +14,13 @@ import { SalesHistoryModal } from './components/SalesHistoryModal';
 import { CustomerSearchModal } from './components/CustomerSearchModal'; 
 import { useActiveDiscounts } from './hooks/useDiscounts'; 
 import { CashManagementModal } from './components/CashManagementModal'; 
-import { useCategories } from './hooks/useCategories'; // NEW HOOK IMPORT
+import { useCategories } from './hooks/useCategories'; 
+import { ManagerDashboardModal } from './components/ManagerDashboardModal'; 
+import { ManagerOverrideModal } from './components/ManagerOverrideModal'; 
 import { 
   ShoppingBag, Trash2, Plus, Minus, CreditCard, Search, 
   Wifi, WifiOff, RefreshCw, LogOut, UserMinus, CloudOff,
-  History, Tag, UserPlus, Wallet, Package 
+  History, Tag, UserPlus, Wallet, Package, ShieldCheck 
 } from 'lucide-react';
 
 const CartItemRow = ({ item, updateQuantity, removeItem }: any) => {
@@ -62,12 +64,12 @@ function App() {
 
   const { data: inventory = [], isLoading } = useInventory();
   const { data: activeDiscounts = [], isLoading: isLoadingDiscounts } = useActiveDiscounts();
-  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(); // NEW CATEGORIES
+  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(); 
   
   const { items, total, subtotal, tax, discount, addItem, updateQuantity, removeItem, clearCart, setDiscount } = useCartStore();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL'); // NEW CATEGORY STATE
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL'); 
   
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedDiscountId, setSelectedDiscountId] = useState<string>('');
@@ -76,8 +78,11 @@ function App() {
   const { data: currentShift, isLoading: isShiftLoading } = useCurrentShift();
   const [isCloseShiftOpen, setIsCloseShiftOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  
   const [isCashManagementOpen, setIsCashManagementOpen] = useState(false);
+  
+  
+  const [isManagerPinOpen, setIsManagerPinOpen] = useState(false);
+  const [isManagerDashboardOpen, setIsManagerDashboardOpen] = useState(false);
   
   useBarcodeScanner(inventory);
 
@@ -155,7 +160,6 @@ function App() {
 
     let aggregatedInventory = Array.from(aggregatedMap.values());
     
-    // NEW: Apply Category Filter
     if (selectedCategory !== 'ALL') {
       aggregatedInventory = aggregatedInventory.filter(
         item => item.productId.categoryId === selectedCategory || 
@@ -170,7 +174,7 @@ function App() {
       const product = item.productId;
       return product.name.toLowerCase().includes(query) || product.sku.toLowerCase().includes(query) || product.barcode?.toLowerCase().includes(query);
     });
-  }, [inventory, searchQuery, selectedCategory]); // Added selectedCategory to dependencies
+  }, [inventory, searchQuery, selectedCategory]); 
 
   return (
     <div className="h-screen w-screen flex bg-gray-100 overflow-hidden text-gray-900">
@@ -180,6 +184,13 @@ function App() {
           <div className="flex items-center gap-2 shrink-0">
             {currentShift && (
               <>
+                <button 
+                  onClick={() => setIsManagerPinOpen(true)} 
+                  className="flex items-center gap-2 text-xs font-semibold bg-slate-900 text-blue-400 hover:bg-slate-800 hover:text-blue-300 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                >
+                  <ShieldCheck size={14} /> Manager
+                </button>
+
                 <button onClick={() => setIsCashManagementOpen(true)} className="flex items-center gap-2 text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 hover:border-green-200">
                   <Wallet size={14} /> Cash Drop
                 </button>
@@ -211,7 +222,6 @@ function App() {
           </div>
         </header>
 
-        {/* NEW: Horizontal Category Tabs */}
         <div className="bg-white px-6 py-3 border-b border-gray-200 flex items-center gap-2 overflow-x-auto hide-scrollbar shrink-0 shadow-sm z-0">
           <button
             onClick={() => setSelectedCategory('ALL')}
@@ -261,7 +271,6 @@ function App() {
                     disabled={isOutOfStock} 
                     className={`rounded-2xl shadow-sm border text-left h-56 flex flex-col overflow-hidden transition-all group ${isOutOfStock ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed' : 'bg-white border-gray-100 hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 active:bg-blue-50'}`}
                   >
-                    {/* IMAGE SECTION */}
                     <div className="h-32 w-full bg-gray-50 border-b border-gray-100 relative shrink-0 flex items-center justify-center overflow-hidden">
                       {product.imageUrl ? (
                         <img 
@@ -273,13 +282,11 @@ function App() {
                         <Package size={32} className="text-gray-300" />
                       )}
                       
-                      {/* Floating Stock Badge */}
                       <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm ${currentStock > 10 ? 'bg-white text-green-700' : currentStock > 0 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
                         {currentStock} left
                       </span>
                     </div>
 
-                    {/* DETAILS SECTION */}
                     <div className="p-3 flex flex-col justify-between flex-1 bg-white">
                       <div>
                         <div className="font-bold text-gray-800 line-clamp-1 group-hover:text-blue-600 transition-colors text-sm">
@@ -356,12 +363,32 @@ function App() {
         </div>
       </div>
 
-      {/* --- ALL MODALS DOWN HERE --- */}
+      {/* --- MODALS --- */}
       {!isShiftLoading && !currentShift && <ShiftGuard />}
       
       {isCloseShiftOpen && <CloseShiftModal onClose={() => setIsCloseShiftOpen(false)} />}
       
       {isCashManagementOpen && <CashManagementModal isOpen={isCashManagementOpen} onClose={() => setIsCashManagementOpen(false)} />}
+
+      {/* --- REAL PIN PAD MODAL --- */}
+      {isManagerPinOpen && (
+        <ManagerOverrideModal 
+          actionName="Access Manager Dashboard"
+          onCancel={() => setIsManagerPinOpen(false)} 
+          onSuccess={(managerName) => {
+            
+            setIsManagerPinOpen(false);
+            setIsManagerDashboardOpen(true);
+          }} 
+        />
+      )}
+
+      {/* --- DASHBOARD MODAL --- */}
+      <ManagerDashboardModal 
+        isOpen={isManagerDashboardOpen} 
+        onClose={() => setIsManagerDashboardOpen(false)} 
+        cashierName="Active User" 
+      />
       
       {isCheckoutOpen && (
         <CheckoutModal 
