@@ -6,7 +6,7 @@ import { TrendingUp, ShoppingBag, AlertCircle, Loader2, Calendar, DollarSign, La
 export const Dashboard = () => {
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month'>('today');
   
-  // --- NEW: View State for Tabs ---
+  
   const [activeView, setActiveView] = useState<'overview' | 'abc'>('overview');
 
   const dateParams = useMemo(() => {

@@ -75,14 +75,17 @@ export const StaffManagement = () => {
 
   return (
     <div className="animate-fadeIn space-y-6">
-      <div className="flex justify-between items-end mb-2">
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="text-blue-600" /> Staff Management
+          </h2>
           <p className="text-gray-500 text-sm mt-1">Manage POS access, roles, and secure PINs.</p>
         </div>
+        
         <button 
-          onClick={isFormOpen ? () => setIsFormOpen(false) : openCreateForm}
-          className={`${isFormOpen ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-blue-600 text-white hover:bg-blue-700'} px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-colors shadow-sm`}
+          onClick={isFormOpen ? () => setIsFormOpen(false) : openCreateForm} 
+          className={`${isFormOpen ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-blue-600 text-white hover:bg-blue-700'} px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors`}
         >
           {isFormOpen ? 'Cancel' : <><Plus size={18} /> Add New Employee</>}
         </button>
