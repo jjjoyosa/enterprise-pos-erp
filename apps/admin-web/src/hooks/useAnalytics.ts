@@ -17,6 +17,21 @@ export interface AnalyticsData {
   }>;
 }
 
+
+export interface ABCAnalysisData {
+  summary: { A: number; B: number; C: number; };
+  items: Array<{
+    _id: string;
+    name: string;
+    sku: string;
+    revenue: number;
+    unitsSold: number;
+    cumulativePercentage: number;
+    grade: 'A' | 'B' | 'C';
+    currentStock: number;
+  }>;
+}
+
 export const useAnalytics = (params?: { startDate: string; endDate: string }) => {
   return useQuery<AnalyticsData>({
     queryKey: ['dashboard-analytics', params],
@@ -25,6 +40,18 @@ export const useAnalytics = (params?: { startDate: string; endDate: string }) =>
       return data;
     },
     refetchInterval: 15000, 
+    refetchOnWindowFocus: true,
+  });
+};
+
+
+export const useABCAnalysis = (params?: { startDate: string; endDate: string }) => {
+  return useQuery<ABCAnalysisData>({
+    queryKey: ['abc-analysis', params],
+    queryFn: async () => {
+      const { data } = await api.get('/sales/abc-analysis', { params });
+      return data;
+    },
     refetchOnWindowFocus: true,
   });
 };
